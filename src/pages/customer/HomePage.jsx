@@ -1,247 +1,157 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  ArrowRight, 
-  Sparkles, 
-  Zap, 
-  Cpu, 
-  ShieldCheck, 
-  Truck, 
-  Headphones, 
-  ChevronRight,
-  TrendingUp
-} from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useProducts } from '../../context/ProductContext';
 import ProductCard from '../../components/products/ProductCard';
-import { categories } from '../../data/categories';
+
+const imgEditorial = 'https://www.figma.com/api/mcp/asset/2ebd961a-78f9-4c3c-8c46-c435d922215f.png';
+const imgLifestyle = 'https://www.figma.com/api/mcp/asset/8caf97be-1a2e-410d-84cd-e7a3214552a1.png';
 
 export default function HomePage() {
   const { products } = useProducts();
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const navigate = useNavigate();
+  const [newsletterEmail, setNewsletterEmail] = useState('');
 
-  const filteredProducts = selectedCategory === 'All'
-    ? products
-    : products.filter((p) => p.category === selectedCategory);
+  const featuredProducts = products.slice(0, 4);
 
-  const featuredProducts = filteredProducts.slice(0, 8);
-  const bestSellers = products.filter((p) => p.tags?.includes('Best Seller')).slice(0, 4);
+  const categoryShortcuts = [
+    { name: 'Smartphones', path: '/search?category=Phones' },
+    { name: 'Computing', path: '/search?category=Laptops' },
+    { name: 'Audio', path: '/search?category=Audio' },
+    { name: 'Gaming', path: '/search?category=Gaming' },
+    { name: 'Smart home', path: '/search?category=Wearables' },
+    { name: 'Accessories', path: '/search?category=Accessories' },
+  ];
 
   return (
-    <div className="space-y-16 pb-16">
-      
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-slate-950 text-white py-16 sm:py-24">
-        {/* Subtle background glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="flex flex-col items-start w-full bg-white">
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Next-Gen Personal Computing</span>
-              </div>
-
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-tight sm:leading-none">
-                Future-ready devices. <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-indigo-400">
-                  Curated for real life.
-                </span>
-              </h1>
-
-              <p className="text-base sm:text-lg text-slate-400 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                Discover breakthrough silicon, pro displays, and all-day endurance. From flagship laptops to intelligent accessories, explore hardware built without compromises.
-              </p>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
-                <Link
-                  to="/search"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-600/30 transition-all active:scale-95"
-                >
-                  <span>Explore Collection</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-
-                <Link
-                  to="/compare"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-slate-700 transition-colors"
-                >
-                  <Cpu className="w-4 h-4 text-blue-400" />
-                  <span>Compare Specs</span>
-                </Link>
-              </div>
-
-              {/* Highlights stats bar */}
-              <div className="pt-8 border-t border-slate-900 grid grid-cols-3 gap-6 text-center lg:text-left">
-                <div>
-                  <p className="text-2xl font-black text-white">20+</p>
-                  <p className="text-xs text-slate-500 uppercase tracking-wider">Premium Devices</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-black text-white">2-Yr</p>
-                  <p className="text-xs text-slate-500 uppercase tracking-wider">Official Warranty</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-black text-white">COD</p>
-                  <p className="text-xs text-slate-500 uppercase tracking-wider">Doorstep Checkout</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Hero Image Showcase */}
-            <div className="lg:col-span-5 relative">
-              <div className="relative mx-auto max-w-md lg:max-w-none">
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-800 bg-slate-900">
-                  <img
-                    src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop"
-                    alt="Featured MacBook Pro"
-                    className="w-full h-80 sm:h-96 object-cover object-center"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
-                  
-                  <div className="absolute bottom-5 inset-x-5 p-4 rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-800 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400">Featured Release</span>
-                      <h4 className="text-sm font-bold text-white">MacBook Pro 16" (M3 Max)</h4>
-                      <p className="text-xs text-slate-400">36GB Unified RAM • 1TB SSD</p>
-                    </div>
-                    <Link
-                      to="/product/1"
-                      className="p-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors"
-                      title="View Details"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+      {/* ── Hero ── */}
+      <section className="bg-[#f4f7fb] flex gap-[52px] items-start w-full px-16 pt-[52px] pb-[52px]" style={{ minHeight: '570px' }}>
+        <div className="flex flex-col gap-[22px] items-start justify-center w-[520px] shrink-0 py-4">
+          <p className="text-[12px] font-bold text-[#2563eb] tracking-widest uppercase">
+            THE 2026 FLAGSHIP EDIT
+          </p>
+          <h1 className="text-[54px] text-[#101828] leading-[1.02] font-normal">
+            Future-ready devices. Curated for real life.
+          </h1>
+          <p className="text-[17px] text-[#667085] leading-[1.55]">
+            Meet the latest phones, laptops and audio—expertly selected, responsibly delivered, and supported for the long run.
+          </p>
+          <div className="flex gap-3 items-start">
+            <Link to="/search"
+              className="h-[44px] bg-[#2563eb] border border-[#2563eb] text-white text-[14px] px-[18px] rounded-[10px] flex items-center justify-center hover:bg-[#1d4ed8] transition-colors">
+              Shop new releases
+            </Link>
+            <Link to="/compare"
+              className="h-[44px] bg-white border border-[#dde4ee] text-[#101828] text-[14px] px-[18px] rounded-[10px] flex items-center justify-center hover:bg-[#f4f7fb] transition-colors">
+              Explore buying guides
+            </Link>
           </div>
+          <p className="text-[12px] text-[#667085]">
+            Free 2-day delivery · 30-day returns · Expert support
+          </p>
+        </div>
+
+        <div className="flex-1 min-w-0 rounded-[24px] overflow-hidden" style={{ height: '466px' }}>
+          <img src={imgEditorial} alt="Featured devices" className="w-full h-full object-cover" />
         </div>
       </section>
 
-      {/* Main Catalog Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Section Header & Category Filters */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 mb-1">
-              <Zap className="w-3.5 h-3.5" />
-              <span>Curated Selection</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Featured Tech Hardware
-            </h2>
-            <p className="text-sm text-slate-500 mt-1">
-              Showing high-performance laptops, smartphones, and accessories.
-            </p>
-          </div>
+      {/* ── Category Shortcuts ── */}
+      <section className="flex items-start justify-between w-full px-16 py-[30px]">
+        {categoryShortcuts.map((cat) => (
+          <Link key={cat.name} to={cat.path}
+            className="bg-[#f4f7fb] flex flex-col gap-2 items-start p-4 rounded-[16px] w-[190px] hover:bg-[#e8f0ff] transition-colors">
+            <span className="text-[14px] font-bold text-[#101828]">{cat.name}</span>
+            <span className="text-[12px] text-[#2563eb]">Shop collection →</span>
+          </Link>
+        ))}
+      </section>
 
-          {/* Category Filter Pills */}
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setSelectedCategory('All')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                selectedCategory === 'All'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              All Devices ({products.length})
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.name)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  selectedCategory === cat.name
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                {cat.name}
-              </button>
-            ))}
+      {/* ── Featured Products ── */}
+      <section className="flex flex-col gap-7 items-start w-full px-16 py-14">
+        <div className="flex items-end justify-between w-full">
+          <div className="flex flex-col gap-[5px]">
+            <p className="text-[11px] font-bold text-[#2563eb] uppercase tracking-widest">Editor's picks</p>
+            <p className="text-[28px] text-[#101828]">Technology worth upgrading for</p>
           </div>
+          <Link to="/search" className="text-[13px] text-[#2563eb] hover:underline">
+            View all products →
+          </Link>
         </div>
 
-        {/* Product Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-4 gap-[22px] w-full">
           {featuredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
 
-        {/* View All CTA */}
-        <div className="mt-12 text-center">
-          <Link
-            to="/search"
-            className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm border border-slate-300 shadow-xs hover:border-slate-400 transition-colors"
-          >
-            <span>View All {products.length} Electronic Devices</span>
-            <ArrowRight className="w-4 h-4 text-blue-600" />
+        <div className="flex justify-center w-full mt-4">
+          <Link to="/search"
+            className="h-[44px] bg-white border border-[#dde4ee] text-[#101828] text-[14px] px-8 rounded-[10px] flex items-center justify-center hover:bg-[#f4f7fb] transition-colors">
+            View All {products.length} Electronic Devices
           </Link>
         </div>
-
       </section>
 
-      {/* Best Sellers Showcase */}
-      {bestSellers.length > 0 && (
-        <section className="bg-slate-100/70 py-16 border-y border-slate-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-600 mb-1">
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  <span>Top Rated by Engineers</span>
-                </div>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                  Best Selling Devices
-                </h3>
-              </div>
-              <Link to="/search" className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                <span>View Full Catalog</span>
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {bestSellers.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Comparison Callout Banner */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-8 sm:p-12 relative overflow-hidden shadow-2xl">
-          <div className="relative z-10 max-w-2xl space-y-4">
-            <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30">
-              Smart Hardware Matrix
-            </span>
-            <h3 className="text-2xl sm:text-4xl font-black tracking-tight">
-              Can't decide between chips or displays?
-            </h3>
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              Use our interactive comparison engine to line up specs side-by-side: processors, RAM, GPU cores, battery runtimes, and pros/cons before checkout.
-            </p>
-            <div className="pt-2">
-              <Link
-                to="/compare"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-bold text-sm transition-colors shadow-lg shadow-blue-500/30"
-              >
-                <span>Launch Device Comparison</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
+      {/* ── Editorial Promotion ── */}
+      <section className="bg-[#f4f7fb] flex gap-6 items-start w-full px-16 py-14">
+        <div className="rounded-[24px] overflow-hidden shrink-0" style={{ width: '760px', height: '390px' }}>
+          <img src={imgLifestyle} alt="Creator essentials" className="w-full h-full object-cover" />
         </div>
+        <div className="bg-[#0b1220] flex-1 flex flex-col gap-[18px] items-start justify-center min-w-0 p-12 rounded-[24px]" style={{ minHeight: '390px' }}>
+          <p className="text-[12px] text-[#8fb4ff] uppercase tracking-widest">CREATOR ESSENTIALS</p>
+          <p className="text-[34px] text-white leading-tight">
+            Tools that keep up with your best ideas.
+          </p>
+          <p className="text-[15px] text-[#b9c4d6] leading-relaxed">
+            High-performance setups for focused work, fluid creation and every place inspiration finds you.
+          </p>
+          <Link to="/search"
+            className="h-[44px] bg-[#2563eb] border border-[#2563eb] text-white text-[14px] px-[18px] rounded-[10px] flex items-center justify-center hover:bg-[#1d4ed8] transition-colors">
+            Build your setup
+          </Link>
+        </div>
+      </section>
+
+      {/* ── Value Propositions ── */}
+      <section className="flex gap-6 items-start w-full px-16 py-11">
+        {[
+          { title: 'Fast, tracked delivery', desc: 'Free on orders over $50' },
+          { title: '30-day returns', desc: 'Simple, no-stress returns' },
+          { title: 'Expert device support', desc: 'Real people, seven days a week' },
+          { title: 'Secure checkout', desc: 'Protected payments and privacy' },
+        ].map((vp) => (
+          <div key={vp.title} className="flex-1 flex flex-col gap-[7px] items-start">
+            <p className="text-[15px] font-bold text-[#101828]">{vp.title}</p>
+            <p className="text-[12px] text-[#667085]">{vp.desc}</p>
+          </div>
+        ))}
+      </section>
+
+      {/* ── Newsletter ── */}
+      <section className="bg-[#e8f0ff] flex items-center justify-between w-full px-16 py-12">
+        <div className="flex flex-col gap-[7px]">
+          <p className="text-[25px] text-[#101828]">Good tech news, thoughtfully edited.</p>
+          <p className="text-[13px] text-[#667085]">Launches, guides and member-only pricing. No noise.</p>
+        </div>
+        <form onSubmit={(e) => { e.preventDefault(); alert('Subscribed!'); setNewsletterEmail(''); }}
+          className="flex gap-[10px] items-center">
+          <div className="bg-white rounded-[10px] h-[44px] flex items-center px-[14px] w-[330px]">
+            <input
+              type="email"
+              value={newsletterEmail}
+              onChange={(e) => setNewsletterEmail(e.target.value)}
+              placeholder="Email address"
+              className="bg-transparent flex-1 text-[13px] text-[#101828] placeholder-[#98a2b3] outline-none"
+              required
+            />
+          </div>
+          <button type="submit"
+            className="h-[44px] bg-[#2563eb] border border-[#2563eb] text-white text-[14px] px-[18px] rounded-[10px] hover:bg-[#1d4ed8] transition-colors whitespace-nowrap">
+            Subscribe
+          </button>
+        </form>
       </section>
 
     </div>

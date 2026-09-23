@@ -1,470 +1,270 @@
 import { useState } from 'react';
-import { 
-  Package, 
-  Plus, 
-  Search, 
-  Edit3, 
-  Trash2, 
-  X, 
-  Check, 
-  AlertCircle,
-  Eye,
-  SlidersHorizontal,
-  ChevronDown
-} from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import Modal from '../../components/ui/Modal';
-import Badge from '../../components/ui/Badge';
-import { categories } from '../../data/categories';
-import { brands } from '../../data/products';
+import { useAuth } from '../../context/AuthContext';
 
 export default function AdminProductsPage() {
   const { products, addProduct, updateProduct, deleteProduct } = useProducts();
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCat, setSelectedCat] = useState('All');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { user } = useAuth();
+  const [search, setSearch] = useState('');
+  const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [mode, setMode] = useState('list'); // 'list' | 'add'
+  const [form, setForm] = useState({ name: '', brand: '', price: '', category: '', stock: '', description: '' });
+  const [status, setStatus] = useState('Draft');
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-  // Form State
-  const initialForm = {
-    name: '',
-    brand: 'Apple',
-    category: 'Laptops',
-    price: '',
-    originalPrice: '',
-    stock: '',
-    sku: '',
-    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&h=400&fit=crop',
-    description: '',
-    processor: '',
-    ram: '',
-    storage: '',
-    display: '',
-    battery: '',
-    tag: 'New',
-  };
+  const filtered = products.filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    p.brand?.toLowerCase().includes(search.toLowerCase())
+  );
 
-  const [formData, setFormData] = useState(initialForm);
-
-  const handleOpenAdd = () => {
+  const openAdd = () => {
+    setForm({ name: '', brand: '', price: '', category: '', stock: '', description: '' });
     setEditingProduct(null);
-    setFormData({
-      ...initialForm,
-      sku: 'DEV-' + Math.floor(1000 + Math.random() * 9000),
-    });
-    setIsModalOpen(true);
+    setMode('add');
   };
 
-  const handleOpenEdit = (prod) => {
-    setEditingProduct(prod);
-    setFormData({
-      name: prod.name,
-      brand: prod.brand,
-      category: prod.category,
-      price: prod.price,
-      originalPrice: prod.originalPrice || '',
-      stock: prod.stock,
-      sku: prod.sku,
-      image: prod.image,
-      description: prod.description,
-      processor: prod.specs?.Processor || '',
-      ram: prod.specs?.RAM || '',
-      storage: prod.specs?.Storage || '',
-      display: prod.specs?.Display || '',
-      battery: prod.specs?.Battery || '',
-      tag: prod.tags?.[0] || 'None',
-    });
-    setIsModalOpen(true);
+  const openEdit = (p) => {
+    setForm({ name: p.name, brand: p.brand || '', price: String(p.price), category: p.category, stock: String(p.stock), description: p.description || '' });
+    setEditingProduct(p);
+    setMode('add');
   };
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    if (!formData.name || !formData.price || !formData.stock) {
-      alert('Please fill in the required fields (Name, Price, Stock).');
-      return;
-    }
-
-    const payload = {
-      name: formData.name,
-      brand: formData.brand,
-      category: formData.category,
-      price: parseFloat(formData.price),
-      originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
-      stock: parseInt(formData.stock, 10),
-      sku: formData.sku,
-      image: formData.image || 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&h=400&fit=crop',
-      description: formData.description,
-      specs: {
-        Processor: formData.processor,
-        RAM: formData.ram,
-        Storage: formData.storage,
-        Display: formData.display,
-        Battery: formData.battery,
-      },
-      tags: formData.tag && formData.tag !== 'None' ? [formData.tag] : [],
-    };
-
-    if (editingProduct) {
-      updateProduct(editingProduct.id, payload);
-    } else {
-      addProduct(payload);
-    }
-
-    setIsModalOpen(false);
+  const handleSave = () => {
+    if (!form.name || !form.price) return;
+    const data = { ...form, price: parseFloat(form.price), stock: parseInt(form.stock) || 0 };
+    if (editingProduct) { updateProduct(editingProduct.id, data); }
+    else { addProduct(data); }
+    setMode('list');
   };
 
   const handleDelete = (id) => {
-    deleteProduct(id);
-    setDeleteConfirmId(null);
+    if (confirm('Delete this product?')) deleteProduct(id);
   };
 
-  // Filtered
-  const filteredProducts = products.filter((p) => {
-    const matchSearch =
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.brand.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchCat = selectedCat === 'All' || p.category === selectedCat;
-    return matchSearch && matchCat;
-  });
-
   return (
-    <div className="space-y-6">
-      
-      {/* Action Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
-        <div>
-          <h2 className="text-xl font-bold text-white tracking-tight">
-            Electronics Inventory & CRUD Control
-          </h2>
-          <p className="text-xs text-slate-400">
-            Total of {products.length} registered hardware products in live state
+    <div className="flex flex-col gap-6 items-start p-8 w-full">
+
+      {/* Top Bar */}
+      <div className="bg-white flex items-center justify-between h-[72px] px-8 rounded-[16px] w-full border border-[#dde4ee]">
+        <div className="flex flex-col gap-[3px]">
+          <p className="text-[20px] font-bold text-[#101828]">
+            {mode === 'add' ? (editingProduct ? 'Edit Product' : 'Add New Product') : 'Product Management'}
           </p>
+          <p className="text-[12px] text-[#667085]">{today}</p>
         </div>
-
-        <button
-          onClick={handleOpenAdd}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 transition-all self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add New Product</span>
-        </button>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <input
-            type="text"
-            placeholder="Search by device name, SKU, or brand..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-          />
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-xs text-slate-400">Category:</span>
-          <select
-            value={selectedCat}
-            onChange={(e) => setSelectedCat(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
-          >
-            <option value="All">All Categories ({products.length})</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.name}>{c.name}</option>
-            ))}
-          </select>
+        <div className="flex items-center gap-[10px]">
+          <div className="w-[34px] h-[34px] rounded-full bg-[#2563eb] text-white font-bold flex items-center justify-center text-sm">
+            {user?.name ? user.name.charAt(0) : 'A'}
+          </div>
+          <p className="text-[13px] font-semibold text-[#101828]">{user?.name || 'Admin'}</p>
         </div>
       </div>
 
-      {/* Product Management Table */}
-      <div className="bg-slate-900/90 rounded-2xl border border-slate-800 shadow-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[10px] bg-slate-950/60">
-                <th className="py-3 px-4">Device</th>
-                <th className="py-3 px-4">Category & SKU</th>
-                <th className="py-3 px-4">Price</th>
-                <th className="py-3 px-4">Stock</th>
-                <th className="py-3 px-4">Key Specs</th>
-                <th className="py-3 px-4">Tags</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 text-slate-300 font-medium">
-              {filteredProducts.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={p.image}
-                        alt=""
-                        className="w-10 h-10 rounded-lg object-cover bg-slate-950 border border-slate-800 shrink-0"
-                      />
-                      <div className="max-w-[200px]">
-                        <p className="font-bold text-white truncate">{p.name}</p>
-                        <p className="text-[10px] text-blue-400">{p.brand}</p>
-                      </div>
-                    </div>
-                  </td>
+      {mode === 'add' ? (
+        /* ── Product Editor ── */
+        <div className="flex gap-5 items-start w-full">
+          {/* Main Fields */}
+          <div className="bg-white border border-[#dde4ee] flex flex-col gap-5 items-start p-5 rounded-[16px] flex-1 min-w-0">
+            {/* Mode Controls */}
+            <div className="flex items-center justify-between w-full">
+              <div className="flex gap-2">
+                <span className="bg-[#e8f0ff] text-[#2563eb] text-[11px] px-[9px] py-[5px] rounded-full cursor-pointer">Single product</span>
+                <span className="bg-[#eef3f9] text-[#667085] text-[11px] px-[9px] py-[5px] rounded-full cursor-pointer">Bulk import</span>
+              </div>
+              <p className="text-[11px] text-[#667085]">Auto-saved</p>
+            </div>
 
-                  <td className="py-3 px-4">
-                    <span className="text-white font-semibold">{p.category}</span>
-                    <span className="block text-[10px] text-slate-400 font-mono">{p.sku}</span>
-                  </td>
+            {/* Product Information */}
+            <div className="flex flex-col gap-4 w-full border border-[#dde4ee] rounded-[16px] p-5">
+              <p className="text-[17px] font-semibold text-[#101828]">Product information</p>
+              <div className="flex flex-col gap-[7px]">
+                <label className="text-[12px] text-[#101828]">Product name</label>
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="e.g. Aether Phone Pro"
+                  className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] text-[#101828] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] bg-white" />
+              </div>
+              <div className="flex gap-4">
+                <div className="flex flex-col gap-[7px] flex-1">
+                  <label className="text-[12px] text-[#101828]">Brand</label>
+                  <input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })}
+                    placeholder="e.g. Aether"
+                    className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] text-[#101828] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] bg-white" />
+                </div>
+                <div className="flex flex-col gap-[7px] flex-1">
+                  <label className="text-[12px] text-[#101828]">Category</label>
+                  <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
+                    placeholder="e.g. Phones"
+                    className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] text-[#101828] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] bg-white" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-[7px]">
+                <label className="text-[12px] text-[#101828]">Description</label>
+                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  placeholder="Product description..."
+                  rows={4}
+                  className="border border-[#dde4ee] rounded-[10px] px-[13px] py-3 text-[14px] text-[#101828] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] bg-white resize-none" />
+                <p className="text-[11px] text-[#667085]">Describe the product clearly. Used in search and product page.</p>
+              </div>
+            </div>
 
-                  <td className="py-3 px-4">
-                    <span className="font-bold text-white">${p.price.toLocaleString()}</span>
-                    {p.originalPrice && (
-                      <span className="block text-[10px] text-slate-500 line-through">
-                        ${p.originalPrice.toLocaleString()}
-                      </span>
-                    )}
-                  </td>
+            {/* Pricing & Inventory */}
+            <div className="flex flex-col gap-4 w-full border border-[#dde4ee] rounded-[16px] p-5">
+              <p className="text-[17px] font-semibold text-[#101828]">Pricing and inventory</p>
+              <div className="flex gap-4">
+                <div className="flex flex-col gap-[7px] flex-1">
+                  <label className="text-[12px] text-[#101828]">Price</label>
+                  <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })}
+                    placeholder="0.00"
+                    className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] text-[#101828] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] bg-white" />
+                </div>
+                <div className="flex flex-col gap-[7px] flex-1">
+                  <label className="text-[12px] text-[#101828]">Compare at price</label>
+                  <input type="number" placeholder="0.00"
+                    className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] text-[#101828] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] bg-white" />
+                </div>
+                <div className="flex flex-col gap-[7px] flex-1">
+                  <label className="text-[12px] text-[#101828]">SKU</label>
+                  <input placeholder="AUTO"
+                    className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] text-[#101828] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] bg-white" />
+                </div>
+              </div>
+            </div>
 
-                  <td className="py-3 px-4">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${
-                        p.stock < 10
-                          ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                          : p.stock < 30
-                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                          : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      }`}
-                    >
-                      {p.stock} units
-                    </span>
-                  </td>
+            {/* Technical Specs */}
+            <div className="flex flex-col gap-4 w-full border border-[#dde4ee] rounded-[16px] p-5">
+              <p className="text-[17px] font-semibold text-[#101828]">Technical specifications</p>
+              <div className="flex gap-4">
+                <div className="flex flex-col gap-[7px] flex-1">
+                  <label className="text-[12px] text-[#101828]">Processor</label>
+                  <input placeholder="e.g. A20 Pro chip"
+                    className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] bg-white" />
+                </div>
+                <div className="flex flex-col gap-[7px] flex-1">
+                  <label className="text-[12px] text-[#101828]">Display size</label>
+                  <input placeholder="e.g. 6.7-inch"
+                    className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] bg-white" />
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="flex flex-col gap-[7px] flex-1">
+                  <label className="text-[12px] text-[#101828]">Stock</label>
+                  <input type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                    placeholder="0"
+                    className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] bg-white" />
+                </div>
+                <div className="flex flex-col gap-[7px] flex-1">
+                  <label className="text-[12px] text-[#101828]">Weight</label>
+                  <input placeholder="e.g. 227g"
+                    className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] bg-white" />
+                </div>
+              </div>
+            </div>
+          </div>
 
-                  <td className="py-3 px-4 max-w-[160px] truncate text-slate-400">
-                    {p.specs?.Processor || 'N/A'}
-                  </td>
+          {/* Right: Settings Panel */}
+          <div className="flex flex-col gap-4 items-start w-[360px] shrink-0">
+            {/* Publish Status */}
+            <div className="bg-white border border-[#dde4ee] flex flex-col gap-4 items-start p-5 rounded-[16px] w-full">
+              <p className="text-[17px] font-semibold text-[#101828]">Status</p>
+              <div className="flex gap-2">
+                {['Draft', 'Published'].map((s) => (
+                  <button key={s} onClick={() => setStatus(s)}
+                    className={`text-[11px] px-[9px] py-[5px] rounded-full transition-all ${
+                      status === s ? 'bg-[#e8f0ff] text-[#2563eb]' : 'bg-[#eef3f9] text-[#667085]'
+                    }`}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-[#667085]">Published products appear in the storefront immediately.</p>
+            </div>
 
-                  <td className="py-3 px-4">
-                    {p.tags?.length > 0 ? (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-400">
-                        {p.tags[0]}
-                      </span>
-                    ) : (
-                      <span className="text-slate-600">—</span>
-                    )}
-                  </td>
+            {/* Product Media */}
+            <div className="bg-white border border-[#dde4ee] flex flex-col gap-4 items-start p-5 rounded-[16px] w-full">
+              <p className="text-[17px] font-semibold text-[#101828]">Product media</p>
+              <div className="bg-[#f4f7fb] w-full rounded-[16px] overflow-hidden" style={{ height: '190px' }}>
+                <div className="w-full h-full flex items-center justify-center text-[#98a2b3] text-[13px]">
+                  Primary image
+                </div>
+              </div>
+              <div className="bg-[#f4f7fb] w-full rounded-[10px] flex items-center justify-center" style={{ height: '80px' }}>
+                <p className="text-[12px] text-[#667085]">Drag images or click to upload</p>
+              </div>
+            </div>
 
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => handleOpenEdit(p)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                        title="Edit product"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirmId(p.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        title="Delete product"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Delete Confirmation Alert */}
-      {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
-            <h4 className="font-bold text-white text-base">Delete Product?</h4>
-            <p className="text-xs text-slate-400">
-              This action will remove the device from the frontend store and comparison matrix instantly.
-            </p>
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => setDeleteConfirmId(null)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800"
-              >
+            {/* Actions */}
+            <div className="flex gap-2 items-center w-full">
+              <button onClick={() => setMode('list')}
+                className="h-[44px] px-[18px] bg-white border border-[#dde4ee] text-[#101828] text-[14px] rounded-[10px] hover:bg-[#f4f7fb] transition-colors">
                 Cancel
               </button>
-              <button
-                onClick={() => handleDelete(deleteConfirmId)}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white"
-              >
-                Confirm Delete
+              <button onClick={handleSave}
+                className="flex-1 h-[44px] bg-[#2563eb] border border-[#2563eb] text-white text-[14px] rounded-[10px] hover:bg-[#1d4ed8] transition-colors">
+                {editingProduct ? 'Save changes' : 'Publish product'}
               </button>
             </div>
           </div>
         </div>
+      ) : (
+        /* ── Product List ── */
+        <>
+          {/* Controls */}
+          <div className="flex items-center gap-3 w-full">
+            <div className="flex-1 bg-white border border-[#dde4ee] rounded-[10px] h-[42px] flex items-center px-4 gap-2">
+              <svg width="16" height="16" viewBox="0 0 18 18" fill="none" className="text-[#98a2b3]">
+                <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M13 13L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              <input value={search} onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search products by name or brand..."
+                className="bg-transparent flex-1 text-[13px] text-[#101828] placeholder-[#98a2b3] outline-none" />
+            </div>
+            <button onClick={openAdd}
+              className="h-[44px] bg-[#2563eb] border border-[#2563eb] text-white text-[14px] px-[18px] rounded-[10px] hover:bg-[#1d4ed8] transition-colors whitespace-nowrap">
+              + Add product
+            </button>
+          </div>
+
+          {/* Table */}
+          <div className="bg-white border border-[#dde4ee] flex flex-col items-start rounded-[16px] w-full overflow-hidden">
+            {/* Header */}
+            <div className="bg-[#eef3f9] border-b border-[#dde4ee] flex gap-3 items-center w-full min-h-[38px] px-5">
+              {['Product name', 'Brand', 'Category', 'Price', 'Stock', 'Actions'].map((h) => (
+                <p key={h} className="flex-1 text-[11px] font-bold text-[#667085] uppercase">{h}</p>
+              ))}
+            </div>
+
+            {filtered.map((p) => (
+              <div key={p.id} className="border-b border-[#dde4ee] flex gap-3 items-center w-full min-h-[52px] px-5 hover:bg-[#fafbfc] transition-colors">
+                <div className="flex-1 flex items-center gap-3 min-w-0">
+                  <img src={p.image} alt="" className="w-8 h-8 rounded-[6px] object-cover shrink-0 border border-[#dde4ee]" />
+                  <p className="text-[12px] text-[#101828] truncate">{p.name}</p>
+                </div>
+                <p className="flex-1 text-[12px] text-[#667085] truncate">{p.brand}</p>
+                <p className="flex-1 text-[12px] text-[#667085] truncate">{p.category}</p>
+                <p className="flex-1 text-[12px] text-[#101828] font-semibold">${p.price?.toLocaleString()}</p>
+                <p className={`flex-1 text-[12px] font-semibold ${p.stock < 10 ? 'text-[#d92d20]' : 'text-[#078a55]'}`}>
+                  {p.stock} units
+                </p>
+                <div className="flex-1 flex gap-2">
+                  <button onClick={() => openEdit(p)}
+                    className="text-[11px] text-[#2563eb] hover:underline">Edit</button>
+                  <button onClick={() => handleDelete(p.id)}
+                    className="text-[11px] text-[#d92d20] hover:underline">Delete</button>
+                </div>
+              </div>
+            ))}
+
+            {filtered.length === 0 && (
+              <div className="flex items-center justify-center w-full py-12">
+                <p className="text-[13px] text-[#667085]">No products found</p>
+              </div>
+            )}
+          </div>
+        </>
       )}
-
-      {/* Add / Edit Modal Form */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={editingProduct ? 'Edit Electronic Device' : 'Register New Device (CRUD)'}
-        maxWidth="max-w-2xl"
-      >
-        <form onSubmit={handleSave} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Product Title *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g. Dell XPS 16"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Brand</label>
-              <select
-                value={formData.brand}
-                onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              >
-                {brands.map((b) => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Category</label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Price ($) *</label>
-              <input
-                type="number"
-                step="0.01"
-                required
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                placeholder="1299.99"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Original Price (optional)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.originalPrice}
-                onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
-                placeholder="1499.99"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Stock Count *</label>
-              <input
-                type="number"
-                required
-                value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                placeholder="25"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">SKU</label>
-              <input
-                type="text"
-                value={formData.sku}
-                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Image URL</label>
-              <input
-                type="url"
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Processor</label>
-              <input
-                type="text"
-                value={formData.processor}
-                onChange={(e) => setFormData({ ...formData, processor: e.target.value })}
-                placeholder="e.g. Apple M3 Max"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">RAM</label>
-              <input
-                type="text"
-                value={formData.ram}
-                onChange={(e) => setFormData({ ...formData, ram: e.target.value })}
-                placeholder="e.g. 32GB"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Description</label>
-              <textarea
-                rows={2}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-          </div>
-
-          <div className="pt-4 border-t border-slate-800 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/30"
-            >
-              {editingProduct ? 'Save Updates' : 'Add to Catalog'}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
     </div>
   );
 }

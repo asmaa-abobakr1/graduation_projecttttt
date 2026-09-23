@@ -1,259 +1,273 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Search, 
-  ShoppingCart, 
-  Scale, 
-  User, 
-  Menu, 
-  X, 
-  LogOut, 
-  LayoutDashboard, 
-  ShieldCheck,
-  ChevronDown,
-  Sparkles
-} from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useProducts } from '../../context/ProductContext';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Navbar() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
+  const dropdownRef = useRef(null);
+
   const { itemCount } = useCart();
   const { compareList } = useProducts();
   const { user, logout, isAuthenticated } = useAuth();
-  
+
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setUserDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    const q = searchQuery.trim();
+    if (q) {
+      navigate(`/search?q=${encodeURIComponent(q)}`);
       setSearchQuery('');
-      setMobileMenuOpen(false);
     }
   };
 
-  const navLinks = [
-    { name: 'Shop All', path: '/search' },
-    { name: 'Laptops', path: '/search?category=Laptops' },
-    { name: 'Phones', path: '/search?category=Phones' },
-    { name: 'Tablets', path: '/search?category=Tablets' },
-    { name: 'Accessories', path: '/search?category=Accessories' },
-    { name: 'Compare', path: '/compare' },
+  const navCategories = [
+    { name: 'New releases', path: '/search?category=New' },
+    { name: 'Phones',       path: '/search?category=Phones' },
+    { name: 'Laptops',      path: '/search?category=Laptops' },
+    { name: 'Tablets',      path: '/search?category=Tablets' },
+
   ];
 
-  const isActive = (path) => {
-    if (path === '/search' && location.pathname === '/search' && !location.search) return true;
-    return location.pathname + location.search === path;
-  };
+  const currentPath = location.pathname + location.search;
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
-      {/* Top Banner Notice */}
-      <div className="bg-slate-900 text-slate-300 text-xs py-1.5 px-4 text-center flex items-center justify-center gap-2">
-        <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-        <span>Free express delivery on orders over $500 • Use code <strong className="text-white">VOLT10</strong> for 10% off</span>
-      </div>
+    <header className="sticky top-0 z-40 w-full shadow-sm">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18 gap-4">
-          
+      {/* ── Primary Navigation ── */}
+      <div className="bg-white border-b border-[#dde4ee]">
+        <div
+          className="flex items-center h-[72px] px-16 gap-7"
+          style={{ maxWidth: '1440px', margin: '0 auto', width: '100%' }}
+        >
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-1 group shrink-0">
-            <span className="text-2xl font-black tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors">
-              VOLT<span className="text-blue-600">.</span>
-            </span>
-            <span className="hidden sm:inline-block text-[10px] font-semibold tracking-wider text-slate-400 uppercase ml-1.5 px-1.5 py-0.5 bg-slate-100 rounded">
-              Tech
+          <Link to="/" className="shrink-0 flex items-center">
+            <span className="text-[22px] font-extrabold text-[#101828] tracking-tight leading-none">
+              VOLT•
             </span>
           </Link>
 
-          {/* Desktop Search Bar */}
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md relative">
-            <input
-              type="text"
-              placeholder="Search laptops, smartphones, chipsets..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-100/90 text-slate-900 placeholder-slate-400 pl-10 pr-4 py-2 text-sm rounded-full border border-transparent focus:border-blue-500 focus:bg-white focus:outline-none transition-all shadow-inner"
-            />
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          {/* Search */}
+          <form onSubmit={handleSearch} className="flex-1 min-w-0">
+            <div className="bg-[#f4f7fb] rounded-[10px] h-[42px] flex items-center gap-2 px-[14px]">
+              {/* Search icon */}
+              <svg
+                width="18" height="18" viewBox="0 0 18 18" fill="none"
+                className="shrink-0 text-[#98a2b3] pointer-events-none"
+              >
+                <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M13 13L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search devices, brands and specs"
+                className="bg-transparent flex-1 min-w-0 text-[14px] text-[#101828] placeholder-[#98a2b3] outline-none border-none"
+              />
+            </div>
           </form>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                to={link.path}
-                className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${
-                  isActive(link.path)
-                    ? 'text-blue-600 bg-blue-50 font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                }`}
-              >
-                {link.name}
-              </Link>
-            ))}
-          </nav>
+          {/* Right items */}
+          <nav className="flex items-center gap-7 shrink-0">
+            <Link
+              to="/search"
+              className="text-[13px] font-semibold text-[#101828] hover:text-[#2563eb] transition-colors whitespace-nowrap"
+            >
+              Categories
+            </Link>
 
-          {/* Right Action Icons */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            
-            {/* Compare trigger */}
+            {/* Account */}
+            {isAuthenticated ? (
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setUserDropdownOpen((v) => !v)}
+                  className="text-[13px] font-semibold text-[#101828] hover:text-[#2563eb] transition-colors whitespace-nowrap"
+                >
+                  {user?.name?.split(' ')[0] ?? 'Account'}
+                </button>
+
+                {userDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-[12px] shadow-[0_8px_32px_rgba(16,24,40,0.12)] border border-[#dde4ee] py-2 z-50">
+                    <div className="px-4 py-2 border-b border-[#dde4ee]">
+                      <p className="text-[11px] text-[#667085]">Signed in as</p>
+                      <p className="text-[13px] font-semibold text-[#101828] truncate">{user?.email}</p>
+                      <span className="inline-block mt-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-[#e8f0ff] text-[#2563eb]">
+                        {user?.role === 'admin' ? 'Admin' : 'Customer'}
+                      </span>
+                    </div>
+                    {user?.role === 'admin' && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="block px-4 py-2.5 text-[13px] text-[#101828] hover:bg-[#f4f7fb] transition-colors"
+                      >
+                        Admin Dashboard
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => {
+                        logout();
+                        setUserDropdownOpen(false);
+                        navigate('/');
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-[13px] text-[#d92d20] hover:bg-[#fff0ee] transition-colors"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Link
+                  to="/login"
+                  className="text-[13px] font-semibold text-[#101828] hover:text-[#2563eb] transition-colors whitespace-nowrap"
+                >
+                  Account
+                </Link>
+                <Link
+                  to="/signup"
+                  className="text-[13px] font-semibold text-white bg-[#2563eb] hover:bg-[#1d4ed8] px-3 py-1.5 rounded-[8px] transition-colors whitespace-nowrap"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+
+            {/* Wishlist / Compare */}
             <Link
               to="/compare"
-              className="relative p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              title="Compare Devices"
+              className="relative text-[13px] font-semibold text-[#101828] hover:text-[#2563eb] transition-colors whitespace-nowrap"
             >
-              <Scale className="w-5 h-5" />
+              Wishlist
               {compareList.length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-blue-600 text-white text-[11px] font-bold rounded-full flex items-center justify-center animate-scale-in shadow-sm">
+                <span className="absolute -top-2.5 -right-3.5 min-w-[18px] h-[18px] bg-[#2563eb] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                   {compareList.length}
                 </span>
               )}
             </Link>
 
-            {/* Shopping Cart trigger */}
+            {/* Cart */}
             <Link
               to="/cart"
-              className="relative p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              title="Shopping Cart"
+              className="relative text-[13px] font-semibold text-[#101828] hover:text-[#2563eb] transition-colors whitespace-nowrap"
             >
-              <ShoppingCart className="w-5 h-5" />
+              Cart
               {itemCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-blue-600 text-white text-[11px] font-bold rounded-full flex items-center justify-center animate-scale-in shadow-sm">
+                <span className="absolute -top-2.5 -right-3.5 min-w-[18px] h-[18px] bg-[#2563eb] text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
                   {itemCount}
                 </span>
               )}
             </Link>
 
-            {/* User Auth / Profile Dropdown */}
-            <div className="relative">
-              {isAuthenticated ? (
-                <div>
-                  <button
-                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                    className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all text-sm font-medium text-slate-700"
-                  >
-                    <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold uppercase shadow-sm">
-                      {user?.name ? user.name.charAt(0) : 'U'}
-                    </div>
-                    <span className="hidden sm:inline-block max-w-[100px] truncate text-slate-900 font-semibold">
-                      {user?.name?.split(' ')[0]}
-                    </span>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                  </button>
-
-                  {userDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 z-50 animate-scale-in">
-                      <div className="px-4 py-2.5 border-b border-slate-100">
-                        <p className="text-xs text-slate-400 font-medium">Signed in as</p>
-                        <p className="text-sm font-semibold text-slate-900 truncate">{user?.name}</p>
-                        <p className="text-xs text-slate-500 truncate">{user?.email}</p>
-                        <span className="inline-block mt-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700">
-                          {user?.role === 'admin' ? 'Administrator' : 'Customer'}
-                        </span>
-                      </div>
-
-                      {user?.role === 'admin' && (
-                        <Link
-                          to="/admin"
-                          onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                        >
-                          <LayoutDashboard className="w-4 h-4 text-blue-600" />
-                          <span>Admin Dashboard</span>
-                        </Link>
-                      )}
-
-                      <button
-                        onClick={() => {
-                          logout();
-                          setUserDropdownOpen(false);
-                          navigate('/');
-                        }}
-                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>Sign Out</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Link
-                    to="/login"
-                    className="text-xs sm:text-sm font-semibold text-slate-700 hover:text-blue-600 px-3 py-1.5 transition-colors"
-                  >
-                    Log In
-                  </Link>
-                  <Link
-                    to="/signup"
-                    className="text-xs sm:text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3.5 py-1.5 rounded-lg transition-colors shadow-sm"
-                  >
-                    Sign Up
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {/* Mobile Menu Toggle */}
+            {/* Mobile hamburger */}
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
-              aria-label="Toggle Menu"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              className="lg:hidden p-1.5 rounded-[8px] text-[#667085] hover:text-[#101828] hover:bg-[#f4f7fb] transition-colors"
+              aria-label="Toggle menu"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileMenuOpen ? (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              )}
             </button>
-
-          </div>
+          </nav>
         </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* ── Category Navigation ── */}
+      <div className="bg-white border-b border-[#dde4ee]">
+        <div
+          className="hidden lg:flex items-center h-[44px] px-16 gap-[30px] overflow-x-auto"
+          style={{ maxWidth: '1440px', margin: '0 auto', width: '100%' }}
+        >
+          {navCategories.map((cat) => (
+            <Link
+              key={cat.name}
+              to={cat.path}
+              className={`text-[13px] whitespace-nowrap shrink-0 transition-colors ${
+                currentPath === cat.path
+                  ? 'text-[#101828] font-semibold border-b-2 border-[#2563eb] pb-0.5'
+                  : 'text-[#667085] hover:text-[#101828]'
+              }`}
+            >
+              {cat.name}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Mobile Drawer ── */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-4 animate-slide-up">
-          <form onSubmit={handleSearch} className="relative">
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-100 text-slate-900 pl-10 pr-4 py-2.5 text-sm rounded-lg border border-transparent focus:border-blue-500 focus:bg-white focus:outline-none"
-            />
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <div className="lg:hidden bg-white border-b border-[#dde4ee] px-6 py-5 space-y-5">
+          {/* Mobile Search */}
+          <form onSubmit={handleSearch}>
+            <div className="bg-[#f4f7fb] rounded-[10px] h-[42px] flex items-center gap-2 px-4">
+              <svg width="16" height="16" viewBox="0 0 18 18" fill="none" className="text-[#98a2b3] shrink-0">
+                <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M13 13L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search devices..."
+                className="bg-transparent flex-1 text-[14px] placeholder-[#98a2b3] outline-none"
+              />
+            </div>
           </form>
 
+          {/* Mobile Category Grid */}
           <div className="grid grid-cols-2 gap-2">
-            {navLinks.map((link) => (
+            {navCategories.map((cat) => (
               <Link
-                key={link.name}
-                to={link.path}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`text-sm font-medium px-3 py-2 rounded-lg ${
-                  isActive(link.path)
-                    ? 'text-blue-600 bg-blue-50 font-bold'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
+                key={cat.name}
+                to={cat.path}
+                className="text-[13px] text-[#667085] hover:text-[#101828] px-3 py-2 rounded-[8px] hover:bg-[#f4f7fb] transition-colors"
               >
-                {link.name}
+                {cat.name}
               </Link>
             ))}
           </div>
 
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Fast Shipping Worldwide</span>
-            <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="text-blue-600 font-semibold hover:underline">
-              Admin Portal →
-            </Link>
-          </div>
+          {/* Mobile Auth */}
+          {!isAuthenticated && (
+            <div className="flex gap-3 pt-2 border-t border-[#f4f7fb]">
+              <Link to="/login" className="flex-1 h-[40px] flex items-center justify-center rounded-[8px] border border-[#dde4ee] text-[13px] text-[#101828] font-semibold">
+                Sign In
+              </Link>
+              <Link to="/signup" className="flex-1 h-[40px] flex items-center justify-center rounded-[8px] bg-[#2563eb] text-white text-[13px] font-semibold hover:bg-[#1d4ed8] transition-colors">
+                Sign Up
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </header>
