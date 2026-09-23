@@ -27,7 +27,7 @@ export default function AdminCategoriesPage() {
     setCats([...cats, { id: Date.now(), name: form.name, slug: form.slug || form.name.toLowerCase(), products: 0, status: form.visibility }]);
     setForm({ name: '', description: '', slug: '', image: '', visibility: 'Active' });
     setShowDrawer(false);
-  };
+  };   
 
   const metrics = [
     { label: 'Total categories', value: String(cats.length) },
