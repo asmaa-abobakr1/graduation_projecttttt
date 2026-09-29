@@ -1,0 +1,294 @@
+/* ═══════════════════════════════════════════════
+   Admin Dashboard Shared Layout Utilities
+   Import this in main.jsx or each admin page
+   ═══════════════════════════════════════════════ */
+
+/* Admin page wrapper */
+.adm-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+  padding: 1.25rem;
+  width: 100%;
+  min-height: 100%;
+}
+
+/* ── Top bar ── */
+.adm-topbar {
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  min-height: 58px;
+  padding: 0.75rem 1.25rem;
+  border-radius: 14px;
+  width: 100%;
+  border: 1px solid #dde4ee;
+}
+.adm-topbar-title { font-size: 16px; font-weight: 700; color: #101828; line-height: 1.3; }
+.adm-topbar-sub   { font-size: 11px; color: #667085; margin-top: 1px; }
+.adm-topbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ── KPI / Metric cards row ── */
+.adm-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  width: 100%;
+}
+.adm-metric-card {
+  background: #fff;
+  border: 1px solid #dde4ee;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px 15px;
+  border-radius: 14px;
+  box-shadow: 0 3px 12px 0 rgba(16,24,40,0.05);
+  min-width: 0;
+}
+.adm-metric-label { font-size: 11px; color: #667085; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adm-metric-value { font-size: 20px; color: #101828; font-weight: 600; line-height: 1.2; }
+.adm-metric-change-pos { font-size: 10px; color: #078a55; }
+.adm-metric-change-neg { font-size: 10px; color: #d92d20; }
+
+/* ── Charts row ── */
+.adm-charts-row {
+  display: flex;
+  gap: 0.875rem;
+  width: 100%;
+  flex-wrap: wrap;
+}
+.adm-chart-main {
+  background: #fff;
+  border: 1px solid #dde4ee;
+  flex: 1;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 1.125rem;
+  border-radius: 14px;
+}
+.adm-chart-side {
+  background: #fff;
+  border: 1px solid #dde4ee;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.125rem;
+  border-radius: 14px;
+  width: 280px;
+  flex-shrink: 0;
+}
+.adm-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 280px;
+  flex-shrink: 0;
+}
+@media (max-width: 1100px) {
+  .adm-chart-side, .adm-side-col { width: 100%; }
+}
+
+/* ── Card wrapper ── */
+.adm-card {
+  background: #fff;
+  border: 1px solid #dde4ee;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 1.125rem;
+  border-radius: 14px;
+  width: 100%;
+}
+.adm-card-title { font-size: 14px; font-weight: 700; color: #101828; }
+.adm-card-sub   { font-size: 11px; color: #667085; }
+
+/* ── Two-col flex row (for editor/settings panel layouts) ── */
+.adm-two-col {
+  display: flex;
+  gap: 0.875rem;
+  width: 100%;
+  flex-wrap: wrap;
+}
+.adm-two-col-main { flex: 1; min-width: 280px; display: flex; flex-direction: column; gap: 0.875rem; }
+.adm-two-col-side { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.875rem; }
+@media (max-width: 1024px) {
+  .adm-two-col-side { width: 100%; }
+}
+
+/* ── Table ── */
+.adm-table-wrap { width: 100%; overflow-x: auto; border-radius: 14px; border: 1px solid #dde4ee; background: #fff; }
+.adm-table-header {
+  background: #eef3f9;
+  border-bottom: 1px solid #dde4ee;
+  display: flex;
+  gap: 0.625rem;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 1rem;
+}
+.adm-table-th {
+  flex: 1; min-width: 0;
+  font-size: 10px; font-weight: 700; color: #667085;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 0 2px;
+}
+.adm-table-row {
+  border-bottom: 1px solid #dde4ee;
+  display: flex;
+  gap: 0.625rem;
+  align-items: center;
+  min-height: 46px;
+  padding: 0 1rem;
+  transition: background 0.1s;
+}
+.adm-table-row:last-child { border-bottom: none; }
+.adm-table-row:hover { background: #fafbfc; }
+.adm-table-td { flex: 1; min-width: 0; font-size: 12px; color: #101828; }
+
+/* ── Controls row ── */
+.adm-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  flex-wrap: wrap;
+}
+.adm-search {
+  flex: 1;
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid #dde4ee;
+  border-radius: 10px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  gap: 0.5rem;
+}
+.adm-search input {
+  background: transparent;
+  flex: 1;
+  font-size: 13px;
+  color: #101828;
+  outline: none;
+  border: none;
+}
+.adm-search input::placeholder { color: #98a2b3; }
+
+/* ── Buttons ── */
+.adm-btn-primary {
+  height: 38px;
+  background: #2563eb;
+  border: 1px solid #2563eb;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.adm-btn-primary:hover { background: #1d4ed8; }
+
+.adm-btn-secondary {
+  height: 38px;
+  background: #fff;
+  border: 1px solid #dde4ee;
+  color: #101828;
+  font-size: 13px;
+  padding: 0 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  display: inline-flex;
+  align-items: center;
+}
+.adm-btn-secondary:hover { background: #f4f7fb; }
+.adm-btn-secondary.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+/* ── Form fields ── */
+.adm-field { display: flex; flex-direction: column; gap: 5px; width: 100%; }
+.adm-label { font-size: 11px; color: #101828; font-weight: 500; }
+.adm-input {
+  height: 38px;
+  border: 1px solid #dde4ee;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 13px;
+  color: #101828;
+  outline: none;
+  background: #fff;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.adm-input:focus { border-color: #2563eb; }
+.adm-input::placeholder { color: #98a2b3; }
+.adm-textarea {
+  border: 1px solid #dde4ee;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #101828;
+  outline: none;
+  background: #fff;
+  resize: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.adm-textarea:focus { border-color: #2563eb; }
+.adm-textarea::placeholder { color: #98a2b3; }
+
+/* ── Status badges ── */
+.adm-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.adm-badge-gray   { background: #eef3f9; color: #667085; }
+.adm-badge-blue   { background: #e8f0ff; color: #2563eb; }
+.adm-badge-green  { background: #e8f8f1; color: #078a55; }
+.adm-badge-red    { background: #feeceb; color: #d92d20; }
+.adm-badge-yellow { background: #fff4e5; color: #d97706; }
+
+/* ── Avatar ── */
+.adm-avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── Empty state ── */
+.adm-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem;
+  width: 100%;
+}
+.adm-empty p { font-size: 13px; color: #667085; }

@@ -23,9 +23,9 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
   const handleLogout = () => { logout(); navigate('/login'); };
 
   const sidebarContent = (
-    <div className="bg-[#0b1220] flex flex-col gap-2 items-start h-full w-[232px] px-[18px] py-6 select-none overflow-y-auto">
-      <span className="text-[22px] font-extrabold text-white tracking-tight mb-0">VOLT• ADMIN</span>
-      <span className="text-[11px] text-[#98a2b3] uppercase tracking-widest mb-2">COMMERCE WORKSPACE</span>
+    <div className="bg-[#0b1220] flex flex-col gap-1.5 items-start h-full w-[220px] px-4 py-5 select-none overflow-y-auto">
+      <span className="text-[18px] font-extrabold text-white tracking-tight mb-0 px-2">VOLT• ADMIN</span>
+      <span className="text-[10px] text-[#98a2b3] uppercase tracking-widest mb-3 px-2">COMMERCE WORKSPACE</span>
 
       {menuItems.map((item) => {
         const active = isActive(item);
@@ -34,10 +34,10 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
             key={item.name}
             to={item.path}
             onClick={onClose}
-            className={`w-full h-[42px] flex items-center px-3 rounded-[10px] text-[13px] transition-colors ${
+            className={`w-full h-9 flex items-center px-3 rounded-lg text-[13px] transition-colors ${
               active
-                ? 'bg-[#2563eb] text-white font-normal'
-                : 'text-[#b7c1d1] hover:bg-[#1a2540] hover:text-white font-medium'
+                ? 'bg-[#2563eb] text-white font-medium'
+                : 'text-[#b7c1d1] hover:bg-[#1a2540] hover:text-white font-normal'
             }`}
           >
             {item.name}
@@ -45,21 +45,21 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
         );
       })}
 
-      <div className="mt-auto w-full pt-4 border-t border-[#1e2d45]">
-        <Link to="/" className="w-full h-[42px] flex items-center px-3 rounded-[10px] text-[13px] text-[#b7c1d1] hover:bg-[#1a2540] hover:text-white transition-colors mb-2">
+      <div className="mt-auto w-full pt-3 border-t border-[#1e2d45]">
+        <Link to="/" className="w-full h-9 flex items-center px-3 rounded-lg text-[12px] text-[#b7c1d1] hover:bg-[#1a2540] hover:text-white transition-colors mb-1.5">
           ← Customer View
         </Link>
         <div className="flex items-center gap-2 px-3 py-2">
-          <div className="w-8 h-8 rounded-full bg-[#2563eb] text-white font-bold flex items-center justify-center text-sm shrink-0">
+          <div className="w-7 h-7 rounded-full bg-[#2563eb] text-white font-bold flex items-center justify-center text-[11px] shrink-0">
             {user?.name ? user.name.charAt(0) : 'A'}
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="text-[12px] font-semibold text-white truncate">{user?.name || 'Admin'}</p>
-            <p className="text-[11px] text-[#98a2b3] truncate">{user?.email || 'admin@volt.com'}</p>
+            <p className="text-[11px] font-semibold text-white truncate">{user?.name || 'Admin'}</p>
+            <p className="text-[10px] text-[#98a2b3] truncate">{user?.email || 'admin@volt.com'}</p>
           </div>
         </div>
         <button onClick={handleLogout}
-          className="w-full h-[38px] flex items-center justify-center px-3 rounded-[10px] text-[12px] text-[#d92d20] hover:bg-[#2a1515] transition-colors mt-1">
+          className="w-full h-9 flex items-center justify-center px-3 rounded-lg text-[12px] text-[#d92d20] hover:bg-[#2a1515] transition-colors mt-1">
           Sign Out
         </button>
       </div>

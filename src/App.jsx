@@ -25,6 +25,9 @@ import AdminProductsPage from './pages/admin/AdminProductsPage';
 import AdminInventoryPage from './pages/admin/AdminInventoryPage';
 import AdminCategoriesPage from './pages/admin/AdminCategoriesPage';
 import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage';
+import AdminOrdersPage from './pages/admin/AdminOrdersPage';
+import AdminCustomersPage from './pages/admin/AdminCustomersPage';
+import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 
 // Scroll to top helper on route change
 function ScrollToTop() {
@@ -62,6 +65,9 @@ export default function App() {
               <Route path="products" element={<AdminProductsPage />} />
               <Route path="inventory" element={<AdminInventoryPage />} />
               <Route path="categories" element={<AdminCategoriesPage />} />
+              <Route path="orders" element={<AdminOrdersPage />} />
+              <Route path="customers" element={<AdminCustomersPage />} />
+              <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
 
             {/* Fallback */}
@@ -72,3 +78,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+
