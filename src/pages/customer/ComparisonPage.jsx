@@ -1,78 +1,60 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  GitCompare, 
-  Trash2, 
-  ShoppingCart, 
-  Plus, 
-  Star, 
-  Check, 
-  X, 
-  ArrowRight,
-  Sparkles
-} from 'lucide-react';
+import { GitCompare, ShoppingCart, Plus, Star, X, ArrowRight } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { useCart } from '../../context/CartContext';
+
+const SPEC_KEYS = ['Processor', 'RAM', 'Storage', 'Display', 'Battery', 'Graphics', 'OS', 'Weight', 'Camera', 'Connectivity'];
 
 export default function ComparisonPage() {
   const { products, compareList, toggleCompare, clearCompare } = useProducts();
   const { addToCart } = useCart();
   const [highlightDiffs, setHighlightDiffs] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen]       = useState(false);
 
-  const compareProducts = products.filter((p) => compareList.includes(p.id));
+  const compareProducts = products.filter(p => compareList.includes(p.id));
+  const availableToAdd  = products.filter(p => !compareList.includes(p.id));
 
-  // Collect all unique specification keys across compared products
-  const allSpecKeys = [
-    'Processor',
-    'RAM',
-    'Storage',
-    'Display',
-    'Battery',
-    'Graphics',
-    'OS',
-    'Weight',
-    'Camera',
-    'Connectivity',
-  ];
+  // ── helper: n empty slot placeholders ──
+  const emptySlots = 4 - compareProducts.length;
 
-  // Products available to add
-  const availableToAdd = products.filter((p) => !compareList.includes(p.id));
+  // ── column widths ──
+  const labelW = 160;
+  const colW   = 200;
+  const totalW = labelW + colW * 4;
 
   return (
-    <div className="flex flex-col items-center w-full min-h-screen bg-slate-50/50 pb-20">
-      
-      {/* ── Page Header ── */}
-      <div className="w-full bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div style={{ minHeight: '100vh', background: '#f8fafc', paddingBottom: 60 }}>
+
+      {/* Page header */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 20px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 mb-1">
-              <GitCompare className="w-4 h-4" /> Hardware Benchmark & Compare
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+              <GitCompare size={14} /> Hardware Benchmark & Compare
             </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+            <h1 style={{ fontSize: 'clamp(22px,3vw,30px)', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>
               Compare Specifications Side-by-Side
             </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Select up to 4 devices to analyze hardware benchmarks, battery life, and pricing.
+            <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
+              Select up to 4 devices — specs, price, and features compared instantly.
             </p>
           </div>
 
           {compareProducts.length > 0 && (
-            <div className="flex items-center gap-3">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <button
-                onClick={() => setHighlightDiffs((v) => !v)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-colors border ${
-                  highlightDiffs
-                    ? 'bg-amber-50 border-amber-300 text-amber-800'
-                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                }`}
-              >
+                onClick={() => setHighlightDiffs(v => !v)}
+                style={{
+                  padding: '8px 14px', borderRadius: 10, border: `1px solid ${highlightDiffs ? '#fde68a' : '#e2e8f0'}`,
+                  background: highlightDiffs ? '#fffbeb' : '#fff', color: highlightDiffs ? '#92400e' : '#475569',
+                  fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                }}>
                 {highlightDiffs ? '✓ Highlighting Differences' : 'Highlight Differences'}
               </button>
               <button
                 onClick={clearCompare}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-slate-200 transition-colors"
-              >
+                style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid #fecaca', background: '#fff', color: '#ef4444', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
                 Clear All
               </button>
             </div>
@@ -80,190 +62,160 @@ export default function ComparisonPage() {
         </div>
       </div>
 
-      {/* ── Comparison Content ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+      {/* Main content */}
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 20px' }}>
+
         {compareProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-16 rounded-3xl bg-white border border-slate-200 text-center max-w-lg mx-auto">
-            <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
-              <GitCompare className="w-8 h-8" />
+          /* ── Empty state ── */
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 24px', background: '#fff', borderRadius: 20, border: '1px solid #e2e8f0', maxWidth: 440, margin: '0 auto', textAlign: 'center' }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, color: '#2563eb' }}>
+              <GitCompare size={30} />
             </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">No Devices Selected</h3>
-            <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-              Explore the catalog and click the compare icon on any device to compare its specifications side-by-side.
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>No Devices Selected</h3>
+            <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6, margin: '0 0 24px' }}>
+              Browse the catalog and click the <strong>compare icon</strong> (⚖️) on any product card to add it here.
             </p>
-            <Link
-              to="/search"
-              className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-colors flex items-center gap-2"
-            >
-              <span>Explore Products</span>
-              <ArrowRight className="w-4 h-4" />
+            <Link to="/search" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '11px 22px', borderRadius: 12, background: '#2563eb', color: '#fff', textDecoration: 'none', fontSize: 13, fontWeight: 700, boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }}>
+              Explore Products <ArrowRight size={14} />
             </Link>
           </div>
         ) : (
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden overflow-x-auto">
-            
-            {/* Top Cards Row */}
-            <div className="grid grid-cols-5 min-w-[900px] border-b border-slate-200">
-              <div className="p-6 bg-slate-50/70 border-r border-slate-200 flex flex-col justify-end">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                  Compared Devices ({compareProducts.length}/4)
-                </span>
-                {compareProducts.length < 4 && (
-                  <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Add Device
-                  </button>
-                )}
-              </div>
+          /* ── Comparison table ── */
+          <div style={{ background: '#fff', borderRadius: 20, border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(0,0,0,0.06)', overflowX: 'auto' }}>
+            <div style={{ minWidth: totalW }}>
 
-              {/* Compared Product Headers */}
-              {compareProducts.map((p) => (
-                <div key={p.id} className="p-6 border-r border-slate-200 last:border-r-0 flex flex-col justify-between relative group">
-                  <button
-                    onClick={() => toggleCompare(p.id)}
-                    className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                    title="Remove device"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+              {/* Product header row */}
+              <div style={{ display: 'grid', gridTemplateColumns: `${labelW}px repeat(4, ${colW}px)`, borderBottom: '2px solid #e2e8f0' }}>
 
-                  <div className="flex flex-col items-center text-center">
-                    <div className="w-32 h-32 p-2 flex items-center justify-center bg-slate-50 rounded-2xl mb-3">
-                      <img src={p.image} alt={p.name} className="max-h-full max-w-full object-contain" />
+                {/* Label cell */}
+                <div style={{ padding: '20px 16px', background: '#f8fafc', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    {compareProducts.length}/4 Selected
+                  </span>
+                  {compareProducts.length < 4 && (
+                    <button onClick={() => setIsModalOpen(true)}
+                      style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 9, background: '#2563eb', color: '#fff', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', width: 'fit-content' }}>
+                      <Plus size={13} /> Add Device
+                    </button>
+                  )}
+                </div>
+
+                {/* Product columns */}
+                {compareProducts.map(p => (
+                  <div key={p.id} style={{ padding: '16px', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', position: 'relative' }}>
+                    <button onClick={() => toggleCompare(p.id)}
+                      style={{ position: 'absolute', top: 10, right: 10, width: 26, height: 26, borderRadius: '50%', background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#ef4444'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#94a3b8'; }}>
+                      <X size={13} />
+                    </button>
+
+                    <div style={{ width: 100, height: 100, background: '#f8fafc', borderRadius: 14, padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+                      <img src={p.image} alt={p.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                     </div>
-                    <span className="text-[11px] font-bold text-blue-600 uppercase">{p.brand}</span>
-                    <Link
-                      to={`/product/${p.id}`}
-                      className="text-sm font-bold text-slate-900 hover:text-blue-600 transition-colors line-clamp-2 mt-1 leading-snug"
-                    >
+
+                    <span style={{ fontSize: 9, fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{p.brand}</span>
+                    <Link to={`/product/${p.id}`} style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', textDecoration: 'none', lineHeight: 1.3, margin: '4px 0 6px', display: 'block' }}>
                       {p.name}
                     </Link>
-                    <div className="text-lg font-black text-slate-900 mt-2">${p.price.toLocaleString()}</div>
-                    <div className="flex items-center gap-1 text-amber-500 text-xs mt-1">
-                      <Star className="w-3.5 h-3.5 fill-current" />
-                      <span className="font-bold text-slate-700">{p.rating}</span>
-                      <span className="text-slate-400">({p.reviews})</span>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: '#0f172a', marginBottom: 4 }}>${p.price?.toLocaleString()}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#f59e0b', marginBottom: 12 }}>
+                      <Star size={12} fill="#f59e0b" /> <span style={{ fontSize: 11, fontWeight: 700, color: '#475569' }}>{p.rating}</span>
+                      <span style={{ fontSize: 10, color: '#94a3b8' }}>({p.reviews})</span>
                     </div>
+                    <button onClick={() => addToCart(p, 1)}
+                      style={{ width: '100%', padding: '8px', borderRadius: 10, background: '#0f172a', color: '#fff', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#2563eb'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#0f172a'}>
+                      <ShoppingCart size={13} /> Add to Cart
+                    </button>
                   </div>
+                ))}
 
-                  <button
-                    onClick={() => addToCart(p, 1)}
-                    className="mt-5 w-full py-2.5 rounded-xl bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
-                  >
-                    <ShoppingCart className="w-3.5 h-3.5" /> Add to Cart
-                  </button>
-                </div>
-              ))}
+                {/* Empty slot placeholders */}
+                {[...Array(emptySlots)].map((_, i) => (
+                  <div key={i} style={{ borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 260, background: '#fafafa', gap: 8 }}>
+                    <button onClick={() => setIsModalOpen(true)}
+                      style={{ width: 48, height: 48, borderRadius: 14, background: '#fff', border: '2px dashed #cbd5e1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#2563eb'; e.currentTarget.style.color = '#2563eb'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#94a3b8'; }}>
+                      <Plus size={22} />
+                    </button>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>Empty Slot</span>
+                  </div>
+                ))}
+              </div>
 
-              {/* Empty slot placeholders */}
-              {[...Array(4 - compareProducts.length)].map((_, i) => (
-                <div
-                  key={i}
-                  className="p-6 border-r border-slate-200 last:border-r-0 flex flex-col items-center justify-center text-center min-h-[300px] bg-slate-50/40"
-                >
-                  <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="w-12 h-12 rounded-2xl bg-white border-2 border-dashed border-slate-300 text-slate-400 hover:text-blue-600 hover:border-blue-500 flex items-center justify-center transition-colors mb-2 shadow-xs"
-                  >
-                    <Plus className="w-6 h-6" />
-                  </button>
-                  <span className="text-xs font-bold text-slate-500">Empty Slot</span>
-                  <span className="text-[11px] text-slate-400 mt-0.5">Click to add device</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Spec Matrix Rows */}
-            <div className="min-w-[900px]">
-              {allSpecKeys.map((key, idx) => {
-                const values = compareProducts.map((p) => p.specs?.[key] || '—');
+              {/* Spec rows */}
+              {SPEC_KEYS.map((key, idx) => {
+                const values     = compareProducts.map(p => p.specs?.[key] || '—');
                 const isDifferent = new Set(values).size > 1;
+                const rowBg      = highlightDiffs && isDifferent ? '#fffbeb' : idx % 2 === 0 ? '#fff' : '#fafafa';
 
                 return (
-                  <div
-                    key={key}
-                    className={`grid grid-cols-5 border-b border-slate-100 text-xs ${
-                      highlightDiffs && isDifferent ? 'bg-amber-50/40' : idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'
-                    }`}
-                  >
-                    <div className="p-4 font-bold text-slate-700 bg-slate-50/80 border-r border-slate-200 flex items-center">
+                  <div key={key} style={{ display: 'grid', gridTemplateColumns: `${labelW}px repeat(4, ${colW}px)`, borderBottom: '1px solid #f1f5f9', background: rowBg }}>
+                    <div style={{ padding: '12px 16px', fontSize: 12, fontWeight: 700, color: '#475569', borderRight: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', background: '#f8fafc' }}>
                       {key}
                     </div>
-
-                    {compareProducts.map((p) => (
-                      <div
-                        key={p.id}
-                        className="p-4 text-slate-800 border-r border-slate-200 last:border-r-0 flex items-center"
-                      >
-                        <span className={highlightDiffs && isDifferent ? 'font-bold text-amber-900' : ''}>
-                          {p.specs?.[key] || '—'}
-                        </span>
+                    {compareProducts.map(p => (
+                      <div key={p.id} style={{ padding: '12px 14px', fontSize: 12, color: '#0f172a', borderRight: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', fontWeight: highlightDiffs && isDifferent ? 700 : 400, color: highlightDiffs && isDifferent ? '#92400e' : '#0f172a' }}>
+                        {p.specs?.[key] || <span style={{ color: '#cbd5e1' }}>—</span>}
                       </div>
                     ))}
-
-                    {[...Array(4 - compareProducts.length)].map((_, i) => (
-                      <div key={i} className="p-4 border-r border-slate-200 last:border-r-0 text-slate-300">
-                        —
-                      </div>
+                    {[...Array(emptySlots)].map((_, i) => (
+                      <div key={i} style={{ padding: '12px 14px', color: '#e2e8f0', fontSize: 12, borderRight: '1px solid #f1f5f9' }}>—</div>
                     ))}
                   </div>
                 );
               })}
             </div>
-
           </div>
         )}
       </div>
 
-      {/* ── Add Device to Comparison Modal ── */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900">Add Device to Compare</h3>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
+      {/* ── Add Device Modal ── */}
+      {isModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(15,23,42,0.6)' }}
+          onClick={e => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
+          <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 560, maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.2)', border: '1px solid #e2e8f0' }}>
+
+            {/* Modal header */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0 }}>Add Device to Compare</h3>
+              <button onClick={() => setIsModalOpen(false)}
+                style={{ width: 30, height: 30, borderRadius: '50%', background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                <X size={16} />
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto divide-y divide-slate-100 space-y-2">
-              {availableToAdd.length > 0 ? (
-                availableToAdd.map((product) => (
-                  <div key={product.id} className="pt-3 first:pt-0 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-slate-50 p-1 shrink-0 border border-slate-200">
-                        <img src={product.image} alt={product.name} className="w-full h-full object-contain" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-bold text-blue-600 uppercase">{product.brand}</span>
-                        <p className="text-xs font-bold text-slate-900">{product.name}</p>
-                        <p className="text-xs font-black text-slate-700">${product.price.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        toggleCompare(product.id);
-                        setIsAddModalOpen(false);
-                      }}
-                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors shrink-0"
-                    >
-                      + Select
-                    </button>
+            {/* Modal list */}
+            <div style={{ overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {availableToAdd.length > 0 ? availableToAdd.map(p => (
+                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 12, border: '1px solid #f1f5f9' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                  <div style={{ width: 44, height: 44, borderRadius: 10, background: '#f1f5f9', padding: 4, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <img src={p.image} alt={p.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                   </div>
-                ))
-              ) : (
-                <p className="text-center text-xs text-slate-500 py-8">All available devices are already in comparison.</p>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: 9, fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{p.brand}</span>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '1px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</p>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: '#475569', margin: 0 }}>${p.price?.toLocaleString()}</p>
+                  </div>
+                  <button onClick={() => { toggleCompare(p.id); setIsModalOpen(false); }}
+                    style={{ padding: '7px 14px', borderRadius: 9, background: '#2563eb', color: '#fff', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#1d4ed8'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#2563eb'}>
+                    + Add
+                  </button>
+                </div>
+              )) : (
+                <p style={{ textAlign: 'center', padding: '32px 16px', fontSize: 13, color: '#64748b' }}>All devices are already in comparison.</p>
               )}
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }
