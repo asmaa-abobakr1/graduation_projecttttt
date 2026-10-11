@@ -22,31 +22,33 @@ export function CartProvider({ children }) {
   }, [items]);
 
   const addToCart = useCallback((product, quantity = 1, selectedOptions = {}) => {
+    const id = product._id || product.id;
+    const normalizedProduct = { ...product, id, _id: id };
     setItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
+      const existing = prev.find((item) => (item._id || item.id) === id);
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id
+          (item._id || item.id) === id
             ? { ...item, quantity: item.quantity + quantity, ...selectedOptions }
             : item
         );
       }
-      return [...prev, { ...product, quantity, ...selectedOptions }];
+      return [...prev, { ...normalizedProduct, quantity, ...selectedOptions }];
     });
   }, []);
 
   const removeFromCart = useCallback((productId) => {
-    setItems((prev) => prev.filter((item) => item.id !== productId));
+    setItems((prev) => prev.filter((item) => (item._id || item.id) !== productId));
   }, []);
 
   const updateQuantity = useCallback((productId, quantity) => {
     if (quantity <= 0) {
-      setItems((prev) => prev.filter((item) => item.id !== productId));
+      setItems((prev) => prev.filter((item) => (item._id || item.id) !== productId));
       return;
     }
     setItems((prev) =>
       prev.map((item) =>
-        item.id === productId ? { ...item, quantity } : item
+        (item._id || item.id) === productId ? { ...item, quantity } : item
       )
     );
   }, []);

@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
+import { addStoredOrder } from '../../utils/exportUtils';
+import { ordersAPI } from '../../services/api';
 
 export default function CartPage() {
   const { 
@@ -44,17 +46,17 @@ export default function CartPage() {
   const [orderId, setOrderId] = useState('');
 
   const [formData, setFormData] = useState({
-    firstName: user?.name?.split(' ')[0] || '',
-    lastName: user?.name?.split(' ')[1] || '',
-    email: user?.email || '',
+    firstName: '',
+    lastName: '',
+    email: '',
     phone: '',
-    address: '452 Innovation Blvd, Suite 100',
-    city: 'San Francisco',
-    state: 'CA',
-    zip: '94107',
-    cardNumber: '•••• •••• •••• 4242',
-    expiry: '12/28',
-    cvv: '888',
+    address: '',
+    city: '',
+    state: '',
+    zip: '',
+    cardNumber: '',
+    expiry: '',
+    cvv: '',
     deliveryMethod: 'express', // 'standard' | 'express'
   });
 
@@ -76,12 +78,87 @@ export default function CartPage() {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handlePlaceOrder = (e) => {
+  const [submittingOrder, setSubmittingOrder] = useState(false);
+
+  const handlePlaceOrder = async (e) => {
     e.preventDefault();
+    if (
+      !formData.firstName.trim() ||
+      !formData.lastName.trim() ||
+      !formData.email.trim() ||
+      !formData.phone.trim() ||
+      !formData.address.trim() ||
+      !formData.city.trim() ||
+      !formData.state.trim() ||
+      !formData.zip.trim() ||
+      !formData.cardNumber.trim() ||
+      !formData.expiry.trim() ||
+      !formData.cvv.trim()
+    ) {
+      alert('Please fill out all required shipping and payment fields.');
+      return;
+    }
+    setSubmittingOrder(true);
     const newOrderId = 'VLT-' + Math.floor(100000 + Math.random() * 900000);
-    setOrderId(newOrderId);
-    setCheckoutStep(3);
-    clearCart();
+    const customerName = `${formData.firstName} ${formData.lastName}`.trim();
+    const customerEmail = formData.email.trim();
+    const fullAddress = `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`;
+
+    try {
+      const res = await ordersAPI.create({
+        customerName,
+        customerEmail,
+        address: fullAddress,
+        items: items.map((item) => ({
+          productId: item._id || item.id,
+          productName: item.name,
+          productImage: item.image,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        promoCode,
+        subtotal,
+        discount,
+        tax,
+        shipping,
+        total: Math.round(total),
+      });
+
+      const serverOrderId = res?.data?.orderId || res?.data?._id || newOrderId;
+      setOrderId(serverOrderId);
+
+      addStoredOrder({
+        id: serverOrderId.startsWith('#') ? serverOrderId : `#${serverOrderId}`,
+        customer: customerName,
+        email: customerEmail,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        status: 'Processing',
+        total: Math.round(total),
+        items: itemCount,
+        address: fullAddress,
+        payment: `Card ending ${formData.cardNumber.slice(-4) || '4242'}`,
+        trackingNumber: 'Pending Fulfillment'
+      });
+    } catch (err) {
+      console.warn('Backend order creation warning (using offline fallback):', err.message);
+      setOrderId(newOrderId);
+      addStoredOrder({
+        id: `#${newOrderId}`,
+        customer: customerName,
+        email: customerEmail,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        status: 'Processing',
+        total: Math.round(total),
+        items: itemCount,
+        address: fullAddress,
+        payment: `Card ending ${formData.cardNumber.slice(-4) || '4242'}`,
+        trackingNumber: 'Pending Fulfillment'
+      });
+    } finally {
+      setSubmittingOrder(false);
+      setCheckoutStep(3);
+      clearCart();
+    }
   };
 
   // Step 3: Order Confirmed
@@ -293,6 +370,28 @@ export default function CartPage() {
                         className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Email Address</label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleFormChange}
+                        required
+                        className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">Phone Number</label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleFormChange}
+                        required
+                        className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
                     <div className="sm:col-span-2">
                       <label className="text-xs font-bold text-slate-700 block mb-1">Street Address</label>
                       <input
@@ -310,6 +409,17 @@ export default function CartPage() {
                         type="text"
                         name="city"
                         value={formData.city}
+                        onChange={handleFormChange}
+                        required
+                        className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">State</label>
+                      <input
+                        type="text"
+                        name="state"
+                        value={formData.state}
                         onChange={handleFormChange}
                         required
                         className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -381,9 +491,11 @@ export default function CartPage() {
                   </button>
                   <button
                     type="submit"
-                    className="px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 flex items-center gap-2"
+                    disabled={submittingOrder}
+                    className="px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-blue-500/20 flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                   >
-                    <Lock className="w-3.5 h-3.5" /> Place Order (${total.toLocaleString(undefined, { maximumFractionDigits: 2 })})
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>{submittingOrder ? 'Processing Order...' : `Place Order ($${total.toLocaleString(undefined, { maximumFractionDigits: 2 })})`}</span>
                   </button>
                 </div>
               </form>

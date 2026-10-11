@@ -134,19 +134,22 @@ export default function Navbar() {
                 background: '#fff', borderRadius: 14, border: '1px solid #e2e8f0',
                 boxShadow: '0 12px 40px rgba(0,0,0,0.12)', overflow: 'hidden', zIndex: 999,
               }}>
-                {liveResults.length > 0 ? liveResults.map(p => (
-                  <Link key={p.id} to={`/product/${p.id}`} onClick={() => setSearchFocused(false)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', textDecoration: 'none', borderBottom: '1px solid #f1f5f9' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                    <img src={p.image} alt={p.name} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8, border: '1px solid #e2e8f0', flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{p.name}</p>
-                      <p style={{ fontSize: 11, color: '#64748b', margin: 0 }}>{p.brand} · {p.category}</p>
-                    </div>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', flexShrink: 0 }}>${p.price?.toLocaleString()}</span>
-                  </Link>
-                )) : (
+                {liveResults.length > 0 ? liveResults.map(p => {
+                  const pid = p._id || p.id;
+                  return (
+                    <Link key={pid} to={`/product/${pid}`} onClick={() => setSearchFocused(false)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', textDecoration: 'none', borderBottom: '1px solid #f1f5f9' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      <img src={p.image} alt={p.name} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8, border: '1px solid #e2e8f0', flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{p.name}</p>
+                        <p style={{ fontSize: 11, color: '#64748b', margin: 0 }}>{p.brand} · {p.category}</p>
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', flexShrink: 0 }}>${p.price?.toLocaleString()}</span>
+                    </Link>
+                  );
+                }) : (
                   <div style={{ padding: '20px 14px', textAlign: 'center', color: '#64748b', fontSize: 13 }}>
                     No results — press Enter to search
                   </div>

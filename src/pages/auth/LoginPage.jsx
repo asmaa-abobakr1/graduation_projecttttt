@@ -14,22 +14,20 @@ export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || '/';
+  const redirectMessage = location.state?.message || '';
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     if (!email || !password) { setError('Please fill in both email and password.'); return; }
     setLoading(true);
-    setTimeout(() => {
-      const res = login(email, password);
-      setLoading(false);
-      if (res.success) {
-        navigate(res.user.role === 'admin' ? '/admin' : (from === '/admin' ? '/' : from));
-      } else {
-        setError(res.error || 'Invalid email or password.');
-      }
-    }, 400);
+    const res = await login(email, password);
+    setLoading(false);
+    if (res.success) {
+      navigate('/', { replace: true });
+    } else {
+      setError(res.error || 'Invalid email or password.');
+    }
   };
 
   const handleQuickLogin = (role) => {
@@ -40,7 +38,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex" style={{ background: '#f4f7fb' }}>
       {/* Left — Login Form */}
-      <div className="bg-white flex flex-col gap-6 items-start overflow-y-auto px-[120px] py-[88px] w-[650px] shrink-0">
+      <div className="bg-white flex flex-col gap-6 items-start overflow-y-auto w-full max-w-full lg:max-w-[560px] xl:max-w-[620px] px-6 sm:px-12 md:px-16 py-12 shrink-0">
         <Link to="/" className="text-[23px] font-extrabold text-[#101828]">VOLT•</Link>
 
         <div className="flex flex-col gap-2">
@@ -64,6 +62,13 @@ export default function LoginPage() {
             </button>
           </div>
         </div>
+
+        {redirectMessage && !error && (
+          <div className="w-full p-3 rounded-xl bg-[#eff6ff] border border-[#bfdbfe] text-[#1d4ed8] text-[12px] flex items-center gap-2">
+            <span className="text-base">🔒</span>
+            <span className="font-medium">{redirectMessage}</span>
+          </div>
+        )}
 
         {error && (
           <div className="w-full p-3 rounded-xl bg-[#feeceb] border border-[#fca99f] text-[#d92d20] text-[12px] flex items-center gap-2">
@@ -134,9 +139,16 @@ export default function LoginPage() {
       </div>
 
       {/* Right — Visual Panel */}
-      <div className="bg-[#0b1220] flex-1 flex flex-col items-start justify-between overflow-hidden p-12">
+      <div className="hidden lg:flex bg-[#0b1220] flex-1 flex-col items-start justify-between overflow-hidden p-12">
         <div className="w-full flex-1 rounded-[24px] overflow-hidden" style={{ maxHeight: '680px' }}>
-          <img src={imgLogin} alt="VOLT device" className="w-full h-full object-cover rounded-[24px]" />
+          <img
+            src={imgLogin}
+            alt="VOLT device"
+            className="w-full h-full object-cover rounded-[24px]"
+            onError={(e) => {
+              e.target.src = 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=900&h=900&fit=crop';
+            }}
+          />
         </div>
         <p className="text-[20px] text-white mt-8 leading-relaxed">
           One account. Every device, order and recommendation in sync.

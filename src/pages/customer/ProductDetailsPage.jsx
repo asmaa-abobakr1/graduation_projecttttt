@@ -23,7 +23,7 @@ import ProductCard from '../../components/products/ProductCard';
 export default function ProductDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getProduct, products, toggleCompare, compareList, toggleWishlist, isWishlisted } = useProducts();
+  const { getProduct, products, loading, toggleCompare, compareList, toggleWishlist, isWishlisted } = useProducts();
   const { addToCart } = useCart();
 
   const product = getProduct(id);
@@ -35,6 +35,14 @@ export default function ProductDetailsPage() {
   const [activeTab, setActiveTab] = useState('specs'); // 'specs' | 'features' | 'reviews'
 
   if (!product) {
+    if (loading) {
+      return (
+        <div className="max-w-4xl mx-auto px-4 py-24 text-center">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-500 text-sm">Loading device details...</p>
+        </div>
+      );
+    }
     return (
       <div className="max-w-4xl mx-auto px-4 py-24 text-center">
         <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4 text-slate-400">
@@ -52,8 +60,9 @@ export default function ProductDetailsPage() {
     );
   }
 
-  const isCompared = compareList.includes(product.id);
-  const wishlisted = isWishlisted(product.id);
+  const productId = product._id || product.id;
+  const isCompared = compareList.includes(productId);
+  const wishlisted = isWishlisted(productId);
   const gallery = product.images?.length > 0 ? product.images : [product.image];
 
   // Storage and color options with price calculation
@@ -76,6 +85,8 @@ export default function ProductDetailsPage() {
     addToCart(
       {
         ...product,
+        id: productId,
+        _id: productId,
         price: currentPrice,
         selectedStorage: storages[selectedStorage]?.label,
         selectedColor: colors[selectedColor]?.name,
@@ -91,11 +102,11 @@ export default function ProductDetailsPage() {
       alert('You can compare up to 4 devices simultaneously.');
       return;
     }
-    toggleCompare(product.id);
+    toggleCompare(productId);
   };
 
   const relatedProducts = products
-    .filter((p) => p.category === product.category && p.id !== product.id)
+    .filter((p) => p.category === product.category && (p._id || p.id) !== productId)
     .slice(0, 4);
 
   return (
@@ -170,7 +181,7 @@ export default function ProductDetailsPage() {
               {/* Floating Wishlist & Compare Buttons */}
               <div className="absolute top-4 right-4 flex items-center gap-2">
                 <button
-                  onClick={() => toggleWishlist(product.id)}
+                  onClick={() => toggleWishlist(productId)}
                   className={`p-2.5 rounded-full border shadow-sm transition-colors ${
                     wishlisted
                       ? 'bg-rose-50 border-rose-300 text-rose-600'

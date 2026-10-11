@@ -11,14 +11,14 @@ export default function SignUpPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('customer');
-  const [agreeTerms, setAgreeTerms] = useState(true);
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const { signup } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     if (!name.trim()) { setError('Please provide your full name.'); return; }
@@ -27,26 +27,34 @@ export default function SignUpPage() {
     if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
     if (!agreeTerms) { setError('You must agree to the Terms of Service.'); return; }
     setLoading(true);
-    setTimeout(() => {
-      const res = signup(name.trim(), email.trim(), password, role);
-      setLoading(false);
-      if (res.success) { navigate(role === 'admin' ? '/admin' : '/'); }
-      else { setError(res.error || 'Registration failed.'); }
-    }, 400);
+    const res = await signup(name.trim(), email.trim(), password, role);
+    setLoading(false);
+    if (res.success) {
+      navigate('/', { replace: true });
+    } else {
+      setError(res.error || 'Registration failed.');
+    }
   };
 
   return (
     <div className="min-h-screen flex bg-white">
       {/* Left — Dark Brand Panel */}
-      <div className="bg-[#0b1220] flex flex-col justify-between overflow-hidden p-14 w-[650px] shrink-0">
+      <div className="hidden lg:flex bg-[#0b1220] flex-col justify-between overflow-hidden p-12 lg:w-[480px] xl:w-[560px] shrink-0">
         <span className="text-[23px] font-extrabold text-white">VOLT•</span>
 
-        <div className="w-full rounded-[24px] overflow-hidden" style={{ height: '520px' }}>
-          <img src={imgDevice} alt="VOLT device" className="w-full h-full object-cover rounded-[24px]" />
+        <div className="w-full rounded-[24px] overflow-hidden" style={{ height: '480px' }}>
+          <img
+            src={imgDevice}
+            alt="VOLT device"
+            className="w-full h-full object-cover rounded-[24px]"
+            onError={(e) => {
+              e.target.src = 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=900&h=900&fit=crop';
+            }}
+          />
         </div>
 
         <div className="flex flex-col gap-[10px]">
-          <p className="text-[30px] text-white leading-tight">Your next device, made easier.</p>
+          <p className="text-[28px] text-white leading-tight font-bold">Your next device, made easier.</p>
           <p className="text-[14px] text-[#aeb8c8] leading-relaxed">
             Save favorites, track orders and get recommendations tuned to your setup.
           </p>
@@ -54,7 +62,7 @@ export default function SignUpPage() {
       </div>
 
       {/* Right — Registration Form */}
-      <div className="flex-1 flex flex-col gap-[22px] items-start overflow-y-auto px-[150px] py-[90px]">
+      <div className="flex-1 flex flex-col gap-[20px] items-start overflow-y-auto w-full px-6 sm:px-12 md:px-16 py-12">
         <p className="text-[12px] font-bold text-[#2563eb] uppercase tracking-widest">
           CREATE YOUR VOLT ACCOUNT
         </p>

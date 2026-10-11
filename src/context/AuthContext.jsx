@@ -1,68 +1,98 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { users as mockUsers } from '../data/users';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('volt_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('volt_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
   });
-  const [registeredUsers, setRegisteredUsers] = useState(() => {
-    const saved = localStorage.getItem('volt_registered_users');
-    return saved ? JSON.parse(saved) : mockUsers;
-  });
+  const [loading, setLoading] = useState(false);
 
+  // ── Persist user & token ────────────────────────────────────────────────────
   useEffect(() => {
     if (user) {
       localStorage.setItem('volt_user', JSON.stringify(user));
     } else {
       localStorage.removeItem('volt_user');
+      localStorage.removeItem('volt_token');
     }
   }, [user]);
 
+  // ── On mount: verify stored token is still valid ────────────────────────────
   useEffect(() => {
-    localStorage.setItem('volt_registered_users', JSON.stringify(registeredUsers));
-  }, [registeredUsers]);
-
-  const login = (email, password) => {
-    const found = registeredUsers.find(
-      (u) => u.email === email && u.password === password
-    );
-    if (found) {
-      const { password: _, ...safeUser } = found;
-      setUser(safeUser);
-      return { success: true, user: safeUser };
+    const token = localStorage.getItem('volt_token');
+    if (token && !user) {
+      authAPI.getMe()
+        .then(({ user: me }) => setUser(me))
+        .catch(() => {
+          localStorage.removeItem('volt_token');
+          localStorage.removeItem('volt_user');
+        });
     }
-    return { success: false, error: 'Invalid email or password' };
-  };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const signup = (name, email, password, role = 'customer') => {
-    const exists = registeredUsers.find((u) => u.email === email);
-    if (exists) {
-      return { success: false, error: 'Email already registered' };
+  // ── Login ───────────────────────────────────────────────────────────────────
+  const login = useCallback(async (email, password) => {
+    setLoading(true);
+    try {
+      const res = await authAPI.login(email, password);
+      localStorage.setItem('volt_token', res.token);
+      setUser(res.user);
+      return { success: true, user: res.user };
+    } catch (err) {
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
     }
-    const newUser = {
-      id: registeredUsers.length + 1,
-      name,
-      email,
-      password,
-      role,
-      avatar: null,
-    };
-    setRegisteredUsers((prev) => [...prev, newUser]);
-    const { password: _, ...safeUser } = newUser;
-    setUser(safeUser);
-    return { success: true, user: safeUser };
-  };
+  }, []);
 
-  const logout = () => {
+  // ── Signup ──────────────────────────────────────────────────────────────────
+  const signup = useCallback(async (name, email, password, role = 'customer') => {
+    setLoading(true);
+    try {
+      const res = await authAPI.register(name, email, password, role);
+      localStorage.setItem('volt_token', res.token);
+      setUser(res.user);
+      return { success: true, user: res.user };
+    } catch (err) {
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ── Logout ──────────────────────────────────────────────────────────────────
+  const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem('volt_user');
-  };
+    localStorage.removeItem('volt_token');
+  }, []);
+
+  // ── Update profile ──────────────────────────────────────────────────────────
+  const updateProfile = useCallback(async (updates) => {
+    try {
+      const res = await authAPI.updateMe(updates);
+      setUser(res.user);
+      return { success: true, user: res.user };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      login,
+      signup,
+      logout,
+      updateProfile,
+      isAuthenticated: !!user,
+    }}>
       {children}
     </AuthContext.Provider>
   );

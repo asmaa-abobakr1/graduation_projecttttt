@@ -18,7 +18,8 @@ import {
 import { useProducts } from '../../context/ProductContext';
 import { useCart } from '../../context/CartContext';
 import ProductCard from '../../components/products/ProductCard';
-import { categories } from '../../data/categories';
+import { categoriesAPI } from '../../services/api';
+
 
 export default function SearchPage() {
   const { products, wishlist, toggleWishlist, isWishlisted, toggleCompare, compareList } = useProducts();
@@ -44,6 +45,29 @@ export default function SearchPage() {
   const [sortBy, setSortBy] = useState('featured');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  // Categories state (loaded dynamically from backend)
+  const [categoriesList, setCategoriesList] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+    categoriesAPI.getAll()
+      .then((res) => {
+        if (mounted && res?.data && Array.isArray(res.data) && res.data.length > 0) {
+          setCategoriesList(res.data);
+        } else if (mounted) {
+          const dynamic = [...new Set(products.map((p) => p.category).filter(Boolean))].map((c) => ({ id: c, name: c }));
+          setCategoriesList(dynamic.length ? dynamic : []);
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          const dynamic = [...new Set(products.map((p) => p.category).filter(Boolean))].map((c) => ({ id: c, name: c }));
+          setCategoriesList(dynamic.length ? dynamic : fallbackCategories);
+        }
+      });
+    return () => { mounted = false; };
+  }, [products]);
 
   // Sync state when URL params change
   useEffect(() => {
@@ -82,7 +106,7 @@ export default function SearchPage() {
 
     // Wishlist filter
     if (showWishlistOnly) {
-      list = list.filter((p) => wishlist.includes(p.id));
+      list = list.filter((p) => wishlist.includes(p.id) || (p._id && wishlist.includes(p._id)));
     }
 
     // Search query multi-field matching
@@ -343,9 +367,9 @@ export default function SearchPage() {
                     </span>
                   </button>
 
-                  {categories.map((cat) => (
+                  {categoriesList.map((cat) => (
                     <button
-                      key={cat.id}
+                      key={cat._id || cat.id || cat.name}
                       onClick={() => setSelectedCategory(cat.name)}
                       className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
                         selectedCategory === cat.name
@@ -519,24 +543,26 @@ export default function SearchPage() {
             {filteredProducts.length > 0 ? (
               viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {filteredProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
+                  {filteredProducts.map((product) => {
+                    const pid = product._id || product.id;
+                    return <ProductCard key={pid} product={product} />;
+                  })}
                 </div>
               ) : (
                 /* List View layout */
                 <div className="flex flex-col gap-4">
                   {filteredProducts.map((product) => {
-                    const wishlisted = isWishlisted(product.id);
-                    const isCompared = compareList.includes(product.id);
+                    const pid = product._id || product.id;
+                    const wishlisted = isWishlisted(pid);
+                    const isCompared = compareList.includes(pid);
                     return (
                       <div
-                        key={product.id}
+                        key={pid}
                         className="flex flex-col sm:flex-row items-center gap-6 p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs hover:shadow-md hover:border-blue-400 transition-all"
                       >
                         {/* Thumbnail */}
                         <Link
-                          to={`/product/${product.id}`}
+                          to={`/product/${pid}`}
                           className="w-full sm:w-48 h-44 rounded-xl bg-slate-50 p-3 flex items-center justify-center shrink-0 overflow-hidden"
                         >
                           <img
@@ -559,7 +585,7 @@ export default function SearchPage() {
                           </div>
 
                           <Link
-                            to={`/product/${product.id}`}
+                            to={`/product/${pid}`}
                             className="text-lg font-bold text-slate-900 hover:text-blue-600 transition-colors block leading-snug"
                           >
                             {product.name}
@@ -599,7 +625,7 @@ export default function SearchPage() {
 
                           <div className="flex items-center gap-2 mt-4">
                             <button
-                              onClick={() => toggleWishlist(product.id)}
+                              onClick={() => toggleWishlist(pid)}
                               className={`p-2 rounded-xl border transition-colors ${
                                 wishlisted ? 'bg-rose-50 border-rose-300 text-rose-600' : 'border-slate-200 text-slate-400 hover:text-rose-600'
                               }`}
@@ -608,7 +634,7 @@ export default function SearchPage() {
                               <Heart className={`w-4 h-4 ${wishlisted ? 'fill-current' : ''}`} />
                             </button>
                             <button
-                              onClick={() => toggleCompare(product.id)}
+                              onClick={() => toggleCompare(pid)}
                               className={`p-2 rounded-xl border transition-colors ${
                                 isCompared ? 'bg-blue-50 border-blue-300 text-blue-600' : 'border-slate-200 text-slate-400 hover:text-blue-600'
                               }`}

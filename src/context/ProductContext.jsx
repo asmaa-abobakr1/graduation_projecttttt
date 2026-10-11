@@ -1,147 +1,147 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { products as initialProducts } from '../data/products';
+import { productsAPI } from '../services/api';
 
 const ProductContext = createContext(null);
 
 export function ProductProvider({ children }) {
-  const [products, setProducts] = useState(() => {
-    try {
-      const saved = localStorage.getItem('volt_products');
-      return saved ? JSON.parse(saved) : initialProducts;
-    } catch {
-      return initialProducts;
-    }
-  });
+  const [products, setProducts]     = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState(null);
+  const [pagination, setPagination] = useState({});
 
+  // ── Compare & Wishlist stay in localStorage (client-side UX) ───────────────
   const [compareList, setCompareList] = useState(() => {
-    try {
-      const saved = localStorage.getItem('volt_compare');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+    try { return JSON.parse(localStorage.getItem('volt_compare') || '[]'); } catch { return []; }
   });
-
   const [wishlist, setWishlist] = useState(() => {
-    try {
-      const saved = localStorage.getItem('volt_wishlist');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+    try { return JSON.parse(localStorage.getItem('volt_wishlist') || '[]'); } catch { return []; }
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem('volt_products', JSON.stringify(products));
-    } catch {}
-  }, [products]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('volt_compare', JSON.stringify(compareList));
-    } catch {}
+    try { localStorage.setItem('volt_compare', JSON.stringify(compareList)); } catch {}
   }, [compareList]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('volt_wishlist', JSON.stringify(wishlist));
-    } catch {}
+    try { localStorage.setItem('volt_wishlist', JSON.stringify(wishlist)); } catch {}
   }, [wishlist]);
 
-  const addProduct = useCallback((product) => {
-    const newProduct = {
-      ...product,
-      id: Math.max(...products.map((p) => p.id), 0) + 1,
-      rating: 5.0,
-      reviews: 1,
-      tags: product.tags || ['New'],
-      images: product.images?.length ? product.images : [product.image || 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&h=400&fit=crop'],
-      highlights: product.highlights || ['Premium Build', 'Fast Performance'],
-      pros: product.pros || ['Great design'],
-      cons: product.cons || ['High demand'],
-    };
-    setProducts((prev) => [newProduct, ...prev]);
-    return newProduct;
-  }, [products]);
+  // ── Fetch all products from backend ────────────────────────────────────────
+  const fetchProducts = useCallback(async (params = {}) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await productsAPI.getAll({ status: 'Published', limit: 100, ...params });
+      setProducts(res.data);
+      setPagination(res.pagination);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const updateProduct = useCallback((id, updates) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === Number(id) ? { ...p, ...updates } : p))
+  // Load on mount
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  // ── CRUD (Admin) ────────────────────────────────────────────────────────────
+  const addProduct = useCallback(async (productData) => {
+    try {
+      const res = await productsAPI.create(productData);
+      setProducts((prev) => [res.data, ...prev]);
+      return { success: true, product: res.data };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const updateProduct = useCallback(async (id, updates) => {
+    try {
+      const res = await productsAPI.update(id, updates);
+      setProducts((prev) =>
+        prev.map((p) => (p._id === id || p._id === res.data._id ? res.data : p))
+      );
+      return { success: true, product: res.data };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const deleteProduct = useCallback(async (id) => {
+    try {
+      await productsAPI.delete(id);
+      setProducts((prev) => prev.filter((p) => p._id !== id));
+      setCompareList((prev) => prev.filter((pid) => pid !== id));
+      setWishlist((prev) => prev.filter((pid) => pid !== id));
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  // ── Compare ─────────────────────────────────────────────────────────────────
+  const toggleCompare = useCallback((productId) => {
+    setCompareList((prev) => {
+      if (prev.includes(productId)) return prev.filter((id) => id !== productId);
+      if (prev.length >= 4) return prev;
+      return [...prev, productId];
+    });
+  }, []);
+
+  const clearCompare = useCallback(() => setCompareList([]), []);
+
+  // ── Wishlist ────────────────────────────────────────────────────────────────
+  const toggleWishlist = useCallback((productId) => {
+    setWishlist((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
     );
   }, []);
 
-  const deleteProduct = useCallback((id) => {
-    setProducts((prev) => prev.filter((p) => p.id !== Number(id)));
-    setCompareList((prev) => prev.filter((pid) => pid !== Number(id)));
-    setWishlist((prev) => prev.filter((pid) => pid !== Number(id)));
-  }, []);
-
-  const toggleCompare = useCallback((productId) => {
-    const numId = Number(productId);
-    setCompareList((prev) => {
-      if (prev.includes(numId)) {
-        return prev.filter((id) => id !== numId);
-      }
-      if (prev.length >= 4) {
-        return prev;
-      }
-      return [...prev, numId];
-    });
-  }, []);
-
-  const clearCompare = useCallback(() => {
-    setCompareList([]);
-  }, []);
-
-  const toggleWishlist = useCallback((productId) => {
-    const numId = Number(productId);
-    setWishlist((prev) => {
-      if (prev.includes(numId)) {
-        return prev.filter((id) => id !== numId);
-      }
-      return [...prev, numId];
-    });
-  }, []);
-
   const isWishlisted = useCallback(
-    (productId) => wishlist.includes(Number(productId)),
+    (productId) => wishlist.includes(productId),
     [wishlist]
   );
 
+  // ── Lookups ─────────────────────────────────────────────────────────────────
+  // Products now use _id (MongoDB ObjectId string)
   const getProduct = useCallback(
-    (id) => products.find((p) => p.id === Number(id)),
+    (id) => products.find((p) => (p._id && (p._id === id || String(p._id) === String(id))) || (p.id && (p.id === id || String(p.id) === String(id)))),
     [products]
   );
 
   const getCompareProducts = useCallback(
-    () => products.filter((p) => compareList.includes(p.id)),
+    () => products.filter((p) => compareList.includes(p._id) || compareList.includes(p.id)),
     [products, compareList]
   );
 
   const getWishlistProducts = useCallback(
-    () => products.filter((p) => wishlist.includes(p.id)),
+    () => products.filter((p) => wishlist.includes(p._id) || wishlist.includes(p.id)),
     [products, wishlist]
   );
 
   return (
-    <ProductContext.Provider
-      value={{
-        products,
-        addProduct,
-        updateProduct,
-        deleteProduct,
-        toggleCompare,
-        clearCompare,
-        compareList,
-        wishlist,
-        toggleWishlist,
-        isWishlisted,
-        getProduct,
-        getCompareProducts,
-        getWishlistProducts,
-      }}
-    >
+    <ProductContext.Provider value={{
+      products,
+      loading,
+      error,
+      pagination,
+      fetchProducts,
+      addProduct,
+      updateProduct,
+      deleteProduct,
+      toggleCompare,
+      clearCompare,
+      compareList,
+      wishlist,
+      toggleWishlist,
+      isWishlisted,
+      getProduct,
+      getCompareProducts,
+      getWishlistProducts,
+    }}>
       {children}
     </ProductContext.Provider>
   );

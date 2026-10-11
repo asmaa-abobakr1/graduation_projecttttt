@@ -10,8 +10,9 @@ export default function ProductCard({ product }) {
   const { addToCart }           = useCart();
   const { toggleCompare, compareList, toggleWishlist, isWishlisted } = useProducts();
 
-  const isCompared  = compareList.includes(product.id);
-  const wishlisted  = isWishlisted(product.id);
+  const productId   = product._id || product.id;
+  const isCompared  = compareList.includes(productId);
+  const wishlisted  = isWishlisted(productId);
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
   const discountPct = hasDiscount ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
   const isNew       = product.tags?.includes('New');
@@ -28,12 +29,12 @@ export default function ProductCard({ product }) {
   const handleToggleCompare = (e) => {
     e.preventDefault(); e.stopPropagation();
     if (!isCompared && compareList.length >= 4) { alert('You can compare up to 4 devices.'); return; }
-    toggleCompare(product.id);
+    toggleCompare(productId);
   };
 
   const handleToggleWishlist = (e) => {
     e.preventDefault(); e.stopPropagation();
-    toggleWishlist(product.id);
+    toggleWishlist(productId);
   };
 
   return (
@@ -51,7 +52,7 @@ export default function ProductCard({ product }) {
     >
       {/* Image area */}
       <div style={{ position: 'relative', background: '#f8fafc', overflow: 'hidden', aspectRatio: '4/3' }}>
-        <Link to={`/product/${product.id}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', padding: 12 }}>
+        <Link to={`/product/${productId}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', padding: 12 }}>
           <img
             src={product.image}
             alt={product.name}
@@ -110,7 +111,7 @@ export default function ProductCard({ product }) {
         </div>
 
         {/* Name */}
-        <Link to={`/product/${product.id}`} style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', textDecoration: 'none', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+        <Link to={`/product/${productId}`} style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', textDecoration: 'none', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
           title={product.name}>
           {product.name}
         </Link>
