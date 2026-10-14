@@ -1,156 +1,150 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-const imgLogin = 'https://www.figma.com/api/mcp/asset/d98f746e-e626-4423-aee1-639a901aa31b.png';
-
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [remember, setRemember] = useState(false);
+  const [errors, setErrors]     = useState({});
+  const [serverErr, setServerErr] = useState('');
+  const [loading, setLoading]   = useState(false);
 
   const { login } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const redirectMessage = location.state?.message || '';
+  const navigate  = useNavigate();
+  const location  = useLocation();
+  const from      = location.state?.from?.pathname || '/';
+
+  const validate = () => {
+    const e = {};
+    if (!email.trim())                                       e.email    = 'Enter a valid email address, such as name@example.com.';
+    else if (!/\S+@\S+\.\S+/.test(email))                  e.email    = 'Enter a valid email address, such as name@example.com.';
+    if (!password)                                          e.password = 'Password must be at least 8 characters.';
+    else if (password.length < 8)                           e.password = 'Password must be at least 8 characters.';
+    return e;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    if (!email || !password) { setError('Please fill in both email and password.'); return; }
+    const errs = validate();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    setErrors({});
+    setServerErr('');
     setLoading(true);
-    const res = await login(email, password);
+    const result = await login(email, password);
     setLoading(false);
-    if (res.success) {
-      navigate('/', { replace: true });
+    if (result.success) {
+      navigate(result.user?.role === 'admin' ? '/admin' : from, { replace: true });
     } else {
-      setError(res.error || 'Invalid email or password.');
+      setServerErr(result.error || 'Invalid credentials. Please try again.');
     }
   };
 
-  const handleQuickLogin = (role) => {
-    if (role === 'admin') { setEmail('admin@volt.com'); setPassword('admin123'); }
-    else { setEmail('john@email.com'); setPassword('user123'); }
-  };
-
   return (
-    <div className="min-h-screen flex" style={{ background: '#f4f7fb' }}>
-      {/* Left — Login Form */}
-      <div className="bg-white flex flex-col gap-6 items-start overflow-y-auto w-full max-w-full lg:max-w-[560px] xl:max-w-[620px] px-6 sm:px-12 md:px-16 py-12 shrink-0">
-        <Link to="/" className="text-[23px] font-extrabold text-[#101828]">VOLT•</Link>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f4f7fb' }}>
 
-        <div className="flex flex-col gap-2">
-          <p className="text-[36px] font-normal text-[#101828] leading-tight">Welcome back.</p>
-          <p className="text-[14px] text-[#667085] leading-relaxed">
+      {/* ── Left: form panel ── */}
+      <div style={{ width: 650, background: '#fff', display: 'flex', flexDirection: 'column', gap: 24, padding: '88px 120px', overflowY: 'auto', flexShrink: 0 }}>
+
+        {/* Brand */}
+        <Link to="/" style={{ textDecoration: 'none' }}>
+          <span style={{ fontSize: 23, fontWeight: 800, color: '#101828' }}>VOLT<span style={{ color: '#2563eb' }}>•</span></span>
+        </Link>
+
+        {/* Welcome */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <p style={{ fontSize: 36, fontWeight: 400, color: '#101828', lineHeight: 'normal', margin: 0 }}>Welcome back.</p>
+          <p style={{ fontSize: 14, color: '#667085', lineHeight: 1.5, margin: 0 }}>
             Sign in to manage orders, saved devices and your account.
           </p>
         </div>
 
-        {/* Quick Demo Access */}
-        <div className="w-full p-3 rounded-xl bg-[#f4f7fb] border border-[#dde4ee]">
-          <p className="text-[11px] font-semibold text-[#667085] uppercase tracking-wide mb-2 text-center">Quick Demo Access</p>
-          <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => handleQuickLogin('admin')}
-              className="py-1.5 px-2.5 rounded-lg text-[12px] font-semibold bg-[#e8f0ff] text-[#2563eb] hover:bg-[#d1e3ff] border border-[#c3d6f9] transition-colors">
-              Demo Admin
-            </button>
-            <button type="button" onClick={() => handleQuickLogin('customer')}
-              className="py-1.5 px-2.5 rounded-lg text-[12px] font-semibold bg-[#e8f8f1] text-[#078a55] hover:bg-[#d0f0e2] border border-[#b3e6cc] transition-colors">
-              Demo Customer
-            </button>
+        {/* Server error */}
+        {serverErr && (
+          <div style={{ padding: '10px 14px', background: '#feeceb', border: '1px solid #fca5a5', borderRadius: 10, fontSize: 13, color: '#d92d20' }}>
+            {serverErr}
           </div>
+        )}
+
+        {/* Email field */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, width: '100%' }}>
+          <label style={{ fontSize: 12, color: '#101828' }}>Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={e => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: '' })); }}
+            placeholder="you@example.com"
+            className={`input-field${errors.email ? ' error' : ''}`}
+          />
+          {errors.email && <p style={{ fontSize: 11, color: '#d92d20', margin: 0 }}>{errors.email}</p>}
         </div>
 
-        {redirectMessage && !error && (
-          <div className="w-full p-3 rounded-xl bg-[#eff6ff] border border-[#bfdbfe] text-[#1d4ed8] text-[12px] flex items-center gap-2">
-            <span className="text-base">🔒</span>
-            <span className="font-medium">{redirectMessage}</span>
-          </div>
-        )}
+        {/* Password field */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, width: '100%' }}>
+          <label style={{ fontSize: 12, color: '#101828' }}>Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={e => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: '' })); }}
+            placeholder="••••••••"
+            className={`input-field${errors.password ? ' error' : ''}`}
+          />
+          {errors.password && <p style={{ fontSize: 11, color: '#d92d20', margin: 0 }}>{errors.password}</p>}
+        </div>
 
-        {error && (
-          <div className="w-full p-3 rounded-xl bg-[#feeceb] border border-[#fca99f] text-[#d92d20] text-[12px] flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <form className="flex flex-col gap-5 w-full" onSubmit={handleSubmit}>
-          {/* Email */}
-          <div className="flex flex-col gap-[7px]">
-            <label className="text-[12px] text-[#101828]">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
-              className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] text-[#101828] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] transition-colors bg-white"
-              required
-            />
-          </div>
-
-          {/* Password */}
-          <div className="flex flex-col gap-[7px]">
-            <label className="text-[12px] text-[#101828]">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] text-[#101828] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] transition-colors bg-white"
-              required
-            />
-          </div>
-
-          {/* Options Row */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-[18px] bg-[#2563eb] rounded-full relative cursor-pointer">
-                <div className="absolute left-[2px] top-[2px] w-[14px] h-[14px] bg-white rounded-full" />
-              </div>
-              <span className="text-[12px] text-[#101828]">Remember Me</span>
+        {/* Remember me + forgot */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => setRemember(v => !v)}>
+            {/* Toggle */}
+            <div style={{
+              width: 32, height: 18, borderRadius: 99, background: remember ? '#2563eb' : '#dde4ee',
+              position: 'relative', flexShrink: 0, transition: 'background 0.2s',
+            }}>
+              <div style={{
+                position: 'absolute', top: 2, left: remember ? 16 : 2,
+                width: 14, height: 14, borderRadius: 99, background: '#fff',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s',
+              }} />
             </div>
-            <button type="button" onClick={() => alert('Password reset: use admin123 or user123')}
-              className="text-[12px] text-[#2563eb] hover:underline">
-              Forgot password?
-            </button>
+            <span style={{ fontSize: 12, color: '#101828' }}>Remember Me</span>
           </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="h-[44px] bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-[14px] font-normal rounded-[10px] transition-colors disabled:opacity-60 border border-[#2563eb]"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-
-        <p className="text-[13px] text-[#667085]">
-          New to VOLT?{' '}
-          <Link to="/signup" className="text-[#2563eb] hover:underline">Create an account</Link>
-        </p>
-        <div className="flex gap-5 text-[12px] text-[#2563eb]">
-          <Link to="/admin" className="hover:underline">Continue to dashboard</Link>
-          <span className="text-[#dde4ee]">·</span>
-          <Link to="/" className="hover:underline">Return home</Link>
+          <span style={{ fontSize: 12, color: '#2563eb', cursor: 'pointer' }}>Forgot password?</span>
         </div>
+
+        {/* Submit */}
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          style={{ width: '100%', height: 44, background: loading ? '#93c5fd' : '#2563eb', color: '#fff', border: '1px solid #2563eb', borderRadius: 10, fontSize: 14, fontWeight: 500, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', transition: 'background 0.15s' }}
+          onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#1d4ed8'; }}
+          onMouseLeave={e => { if (!loading) e.currentTarget.style.background = '#2563eb'; }}
+        >
+          {loading ? 'Signing in…' : 'Sign In'}
+        </button>
+
+        {/* Links */}
+        <p style={{ fontSize: 13, color: '#667085', margin: 0 }}>
+          New to VOLT?{' '}
+          <Link to="/signup" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 500 }}>Create an account</Link>
+        </p>
+        <p style={{ fontSize: 12, margin: 0 }}>
+          <Link to="/admin" style={{ color: '#2563eb', textDecoration: 'none' }}>Continue to dashboard</Link>
+          {' · '}
+          <Link to="/" style={{ color: '#2563eb', textDecoration: 'none' }}>Return home</Link>
+        </p>
       </div>
 
-      {/* Right — Visual Panel */}
-      <div className="hidden lg:flex bg-[#0b1220] flex-1 flex-col items-start justify-between overflow-hidden p-12">
-        <div className="w-full flex-1 rounded-[24px] overflow-hidden" style={{ maxHeight: '680px' }}>
-          <img
-            src={imgLogin}
-            alt="VOLT device"
-            className="w-full h-full object-cover rounded-[24px]"
-            onError={(e) => {
-              e.target.src = 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=900&h=900&fit=crop';
-            }}
-          />
+      {/* ── Right: visual panel ── */}
+      <div style={{ flex: 1, background: '#0b1220', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 48, overflow: 'hidden' }}>
+        {/* Image placeholder */}
+        <div style={{ flex: 1, borderRadius: 24, background: 'linear-gradient(135deg,#1e2a3a 0%,#0d1829 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 32 }}>
+          <div style={{ textAlign: 'center', color: '#2a3a55' }}>
+            <div style={{ fontSize: 64, marginBottom: 12 }}>⚡</div>
+            <p style={{ fontSize: 13, color: '#3a4e6a', margin: 0 }}>VOLT• Electronics</p>
+          </div>
         </div>
-        <p className="text-[20px] text-white mt-8 leading-relaxed">
+        {/* Quote */}
+        <p style={{ fontSize: 20, fontWeight: 400, color: '#fff', lineHeight: 1.4, margin: 0 }}>
           One account. Every device, order and recommendation in sync.
         </p>
       </div>

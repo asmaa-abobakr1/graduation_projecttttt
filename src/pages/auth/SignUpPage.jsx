@@ -1,161 +1,115 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle, Shield, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-const imgDevice = 'https://www.figma.com/api/mcp/asset/be02075b-720c-442c-a71e-24721f186352.png';
-
 export default function SignUpPage() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [name, setName]         = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('customer');
-  const [agreeTerms, setAgreeTerms] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [errors, setErrors]     = useState({});
+  const [serverErr, setServerErr] = useState('');
+  const [loading, setLoading]   = useState(false);
 
   const { signup } = useAuth();
-  const navigate = useNavigate();
+  const navigate   = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    if (!name.trim()) { setError('Please provide your full name.'); return; }
-    if (!email.trim() || !email.includes('@')) { setError('Please provide a valid email address.'); return; }
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
-    if (!agreeTerms) { setError('You must agree to the Terms of Service.'); return; }
+  const validate = () => {
+    const e = {};
+    if (!name.trim())                    e.name     = 'Full name is required.';
+    if (!email.trim())                   e.email    = 'Enter a valid email address.';
+    else if (!/\S+@\S+\.\S+/.test(email)) e.email  = 'Enter a valid email address, such as name@example.com.';
+    if (!password)                       e.password = 'Password must be at least 8 characters.';
+    else if (password.length < 8)        e.password = 'Password must be at least 8 characters.';
+    return e;
+  };
+
+  const handleSubmit = async (ev) => {
+    ev.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    setErrors({});
+    setServerErr('');
     setLoading(true);
-    const res = await signup(name.trim(), email.trim(), password, role);
+    const result = await signup(name.trim(), email.trim(), password);
     setLoading(false);
-    if (res.success) {
+    if (result.success) {
       navigate('/', { replace: true });
     } else {
-      setError(res.error || 'Registration failed.');
+      setServerErr(result.error || 'Could not create account. Please try again.');
     }
   };
 
+  const Field = ({ label, type = 'text', value, onChange, error, placeholder }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 7, width: '100%' }}>
+      <label style={{ fontSize: 12, color: '#101828' }}>{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className={`input-field${error ? ' error' : ''}`}
+      />
+      {error && <p style={{ fontSize: 11, color: '#d92d20', margin: 0 }}>{error}</p>}
+    </div>
+  );
+
   return (
-    <div className="min-h-screen flex bg-white">
-      {/* Left — Dark Brand Panel */}
-      <div className="hidden lg:flex bg-[#0b1220] flex-col justify-between overflow-hidden p-12 lg:w-[480px] xl:w-[560px] shrink-0">
-        <span className="text-[23px] font-extrabold text-white">VOLT•</span>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f4f7fb' }}>
 
-        <div className="w-full rounded-[24px] overflow-hidden" style={{ height: '480px' }}>
-          <img
-            src={imgDevice}
-            alt="VOLT device"
-            className="w-full h-full object-cover rounded-[24px]"
-            onError={(e) => {
-              e.target.src = 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=900&h=900&fit=crop';
-            }}
-          />
-        </div>
+      {/* ── Left: form ── */}
+      <div style={{ width: 650, background: '#fff', display: 'flex', flexDirection: 'column', gap: 24, padding: '88px 120px', overflowY: 'auto', flexShrink: 0 }}>
 
-        <div className="flex flex-col gap-[10px]">
-          <p className="text-[28px] text-white leading-tight font-bold">Your next device, made easier.</p>
-          <p className="text-[14px] text-[#aeb8c8] leading-relaxed">
-            Save favorites, track orders and get recommendations tuned to your setup.
+        <Link to="/" style={{ textDecoration: 'none' }}>
+          <span style={{ fontSize: 23, fontWeight: 800, color: '#101828' }}>VOLT<span style={{ color: '#2563eb' }}>•</span></span>
+        </Link>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <p style={{ fontSize: 36, fontWeight: 400, color: '#101828', lineHeight: 'normal', margin: 0 }}>Create your account.</p>
+          <p style={{ fontSize: 14, color: '#667085', lineHeight: 1.5, margin: 0 }}>
+            Join VOLT to track orders, save devices and get personalised picks.
           </p>
         </div>
-      </div>
 
-      {/* Right — Registration Form */}
-      <div className="flex-1 flex flex-col gap-[20px] items-start overflow-y-auto w-full px-6 sm:px-12 md:px-16 py-12">
-        <p className="text-[12px] font-bold text-[#2563eb] uppercase tracking-widest">
-          CREATE YOUR VOLT ACCOUNT
-        </p>
-        <p className="text-[34px] text-[#101828] leading-tight">
-          Join the smarter way to shop tech.
-        </p>
-        <p className="text-[14px] text-[#667085]">
-          Already have an account?{' '}
-          <Link to="/login" className="text-[#2563eb] hover:underline">Sign in</Link>
-        </p>
-
-        {/* Account Type */}
-        <div className="w-full">
-          <label className="block text-[12px] text-[#101828] mb-2">Account Type</label>
-          <div className="flex gap-2 p-1 bg-[#f4f7fb] rounded-xl border border-[#dde4ee]">
-            <button type="button" onClick={() => setRole('customer')}
-              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                role === 'customer' ? 'bg-[#2563eb] text-white shadow-sm' : 'text-[#667085] hover:text-[#101828]'
-              }`}>
-              <User className="w-3.5 h-3.5" />
-              <span>Customer</span>
-            </button>
-            <button type="button" onClick={() => setRole('admin')}
-              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                role === 'admin' ? 'bg-[#2563eb] text-white shadow-sm' : 'text-[#667085] hover:text-[#101828]'
-              }`}>
-              <Shield className="w-3.5 h-3.5" />
-              <span>Store Admin</span>
-            </button>
-          </div>
-        </div>
-
-        {error && (
-          <div className="w-full p-3 rounded-xl bg-[#feeceb] border border-[#fca99f] text-[#d92d20] text-[12px] flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
+        {serverErr && (
+          <div style={{ padding: '10px 14px', background: '#feeceb', border: '1px solid #fca5a5', borderRadius: 10, fontSize: 13, color: '#d92d20' }}>
+            {serverErr}
           </div>
         )}
 
-        <form className="flex flex-col gap-[22px] w-full" onSubmit={handleSubmit}>
-          {/* Full Name */}
-          <div className="flex flex-col gap-[7px]">
-            <label className="text-[12px] text-[#101828]">Full Name</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-              placeholder="Jordan Lee"
-              className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] text-[#101828] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] transition-colors bg-white"
-              required />
+        <Field label="Full name"     value={name}     onChange={e => { setName(e.target.value);     setErrors(p => ({ ...p, name: '' }));     }} error={errors.name}     placeholder="Jordan Smith" />
+        <Field label="Email"         type="email" value={email}    onChange={e => { setEmail(e.target.value);    setErrors(p => ({ ...p, email: '' }));    }} error={errors.email}    placeholder="you@example.com" />
+        <Field label="Password"      type="password" value={password} onChange={e => { setPassword(e.target.value); setErrors(p => ({ ...p, password: '' })); }} error={errors.password} placeholder="At least 8 characters" />
+
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          style={{ width: '100%', height: 44, background: loading ? '#93c5fd' : '#2563eb', color: '#fff', border: '1px solid #2563eb', borderRadius: 10, fontSize: 14, fontWeight: 500, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', transition: 'background 0.15s' }}
+          onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#1d4ed8'; }}
+          onMouseLeave={e => { if (!loading) e.currentTarget.style.background = '#2563eb'; }}
+        >
+          {loading ? 'Creating account…' : 'Create Account'}
+        </button>
+
+        <p style={{ fontSize: 13, color: '#667085', margin: 0 }}>
+          Already have an account?{' '}
+          <Link to="/login" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 500 }}>Sign in</Link>
+        </p>
+        <p style={{ fontSize: 12, margin: 0 }}>
+          <Link to="/" style={{ color: '#2563eb', textDecoration: 'none' }}>Return home</Link>
+        </p>
+      </div>
+
+      {/* ── Right: visual panel ── */}
+      <div style={{ flex: 1, background: '#0b1220', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 48, overflow: 'hidden' }}>
+        <div style={{ flex: 1, borderRadius: 24, background: 'linear-gradient(135deg,#1e2a3a 0%,#0d1829 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 32 }}>
+          <div style={{ textAlign: 'center', color: '#2a3a55' }}>
+            <div style={{ fontSize: 64, marginBottom: 12 }}>⚡</div>
+            <p style={{ fontSize: 13, color: '#3a4e6a', margin: 0 }}>VOLT• Electronics</p>
           </div>
-
-          {/* Email */}
-          <div className="flex flex-col gap-[7px]">
-            <label className="text-[12px] text-[#101828]">Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              placeholder="jordan@example.com"
-              className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] text-[#101828] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] transition-colors bg-white"
-              required />
-          </div>
-
-          {/* Password */}
-          <div className="flex flex-col gap-[7px]">
-            <label className="text-[12px] text-[#101828]">Password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••••"
-              className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] text-[#101828] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] transition-colors bg-white"
-              required />
-            <p className="text-[11px] text-[#667085]">Use 8+ characters with a number and symbol.</p>
-          </div>
-
-          {/* Confirm Password */}
-          <div className="flex flex-col gap-[7px]">
-            <label className="text-[12px] text-[#101828]">Confirm Password</label>
-            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••••"
-              className="h-[44px] border border-[#dde4ee] rounded-[10px] px-[13px] text-[14px] text-[#101828] placeholder-[#98a2b3] outline-none focus:border-[#2563eb] transition-colors bg-white"
-              required />
-          </div>
-
-          {/* Terms */}
-          <div className="flex items-center gap-[10px]">
-            <input id="terms" type="checkbox" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)}
-              className="w-[18px] h-[18px] rounded border-[#dde4ee] accent-[#2563eb] cursor-pointer" />
-            <label htmlFor="terms" className="text-[12px] text-[#667085] cursor-pointer">
-              I agree to the <span className="text-[#2563eb]">Terms of Service</span> and <span className="text-[#2563eb]">Privacy Policy</span>.
-            </label>
-          </div>
-
-          <button type="submit" disabled={loading}
-            className="h-[44px] bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-[14px] font-normal rounded-[10px] transition-colors disabled:opacity-60 border border-[#2563eb]">
-            {loading ? 'Creating Account...' : 'Create Account'}
-          </button>
-        </form>
-
-        <p className="text-[11px] text-[#667085]">🔒 Your information is encrypted and never sold.</p>
+        </div>
+        <p style={{ fontSize: 20, fontWeight: 400, color: '#fff', lineHeight: 1.4, margin: 0 }}>
+          Your next device is one tap away. Build your wishlist, track orders and compare specs — all in one place.
+        </p>
       </div>
     </div>
   );

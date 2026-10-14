@@ -1,602 +1,328 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  ShoppingCart, 
-  Trash2, 
-  Plus, 
-  Minus, 
-  ArrowRight, 
-  ShieldCheck, 
-  Truck, 
-  CreditCard, 
-  CheckCircle,
-  Tag,
-  ArrowLeft,
-  Lock
-} from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
-import { addStoredOrder } from '../../utils/exportUtils';
 import { ordersAPI } from '../../services/api';
+import { addStoredOrder } from '../../utils/exportUtils';
+
+function SummaryLine({ label, value, bold, large, green, red }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <span style={{ fontSize: bold ? 14 : 13, fontWeight: bold ? 700 : 400, color: '#101828' }}>{label}</span>
+      <span style={{ fontSize: large ? 20 : bold ? 14 : 13, fontWeight: bold ? 700 : 400, color: green ? '#078a55' : red ? '#d92d20' : '#101828' }}>{value}</span>
+    </div>
+  );
+}
 
 export default function CartPage() {
-  const { 
-    items, 
-    removeFromCart, 
-    updateQuantity, 
-    clearCart, 
-    subtotal, 
-    discount, 
-    tax, 
-    shipping, 
-    total, 
-    itemCount,
-    applyPromo,
-    promoCode,
-    promoDiscount
+  const {
+    items, removeFromCart, updateQuantity, clearCart,
+    subtotal, discount, tax, shipping, total, itemCount,
+    applyPromo, promoCode, promoDiscount,
   } = useCart();
-
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  const [couponInput, setCouponInput] = useState('');
-  const [couponError, setCouponError] = useState('');
+  const [couponInput, setCouponInput]     = useState('');
+  const [couponError, setCouponError]     = useState('');
   const [couponSuccess, setCouponSuccess] = useState('');
-  const [checkoutStep, setCheckoutStep] = useState(1); // 1: Cart, 2: Checkout, 3: Confirmation
-  const [orderId, setOrderId] = useState('');
+  const [step, setStep]                   = useState(1); // 1: Cart/checkout  3: Confirmation
+  const [orderId, setOrderId]             = useState('');
+  const [submitting, setSubmitting]       = useState(false);
 
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    zip: '',
-    cardNumber: '',
-    expiry: '',
-    cvv: '',
-    deliveryMethod: 'express', // 'standard' | 'express'
+  const [form, setForm] = useState({
+    firstName: '', lastName: '', email: user?.email || '', phone: '',
+    address: '', city: '', state: '', zip: '',
+    cardNumber: '', expiry: '', cvv: '',
+    deliveryMethod: 'standard',
   });
 
-  const handleApplyCoupon = (e) => {
+  const handleCoupon = (e) => {
     e.preventDefault();
-    setCouponError('');
-    setCouponSuccess('');
+    setCouponError(''); setCouponSuccess('');
     if (!couponInput.trim()) return;
     const res = applyPromo(couponInput);
     if (res.success) {
       setCouponSuccess(`Code ${couponInput.toUpperCase()} applied! (${res.discount}% off)`);
       setCouponInput('');
     } else {
-      setCouponError(res.error || 'Invalid promotional code');
+      setCouponError(res.error || 'Invalid code');
     }
   };
 
-  const handleFormChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const [submittingOrder, setSubmittingOrder] = useState(false);
+  const handleFormChange = e => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
-    if (
-      !formData.firstName.trim() ||
-      !formData.lastName.trim() ||
-      !formData.email.trim() ||
-      !formData.phone.trim() ||
-      !formData.address.trim() ||
-      !formData.city.trim() ||
-      !formData.state.trim() ||
-      !formData.zip.trim() ||
-      !formData.cardNumber.trim() ||
-      !formData.expiry.trim() ||
-      !formData.cvv.trim()
-    ) {
-      alert('Please fill out all required shipping and payment fields.');
+    const required = ['firstName','lastName','email','phone','address','city','state','zip','cardNumber','expiry','cvv'];
+    if (required.some(k => !form[k].trim())) {
+      alert('Please fill out all required fields.');
       return;
     }
-    setSubmittingOrder(true);
-    const newOrderId = 'VLT-' + Math.floor(100000 + Math.random() * 900000);
-    const customerName = `${formData.firstName} ${formData.lastName}`.trim();
-    const customerEmail = formData.email.trim();
-    const fullAddress = `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`;
-
+    setSubmitting(true);
+    const newId = 'VLT-' + Math.floor(100000 + Math.random() * 900000);
+    const customerName  = `${form.firstName} ${form.lastName}`.trim();
+    const fullAddress   = `${form.address}, ${form.city}, ${form.state} ${form.zip}`;
     try {
       const res = await ordersAPI.create({
-        customerName,
-        customerEmail,
-        address: fullAddress,
-        items: items.map((item) => ({
-          productId: item._id || item.id,
-          productName: item.name,
-          productImage: item.image,
-          price: item.price,
-          quantity: item.quantity,
-        })),
-        promoCode,
-        subtotal,
-        discount,
-        tax,
-        shipping,
-        total: Math.round(total),
+        customerName, customerEmail: form.email.trim(), address: fullAddress,
+        items: items.map(i => ({ productId: i._id || i.id, productName: i.name, productImage: i.image, price: i.price, quantity: i.quantity })),
+        promoCode, subtotal, discount, tax, shipping, total: Math.round(total),
       });
-
-      const serverOrderId = res?.data?.orderId || res?.data?._id || newOrderId;
-      setOrderId(serverOrderId);
-
-      addStoredOrder({
-        id: serverOrderId.startsWith('#') ? serverOrderId : `#${serverOrderId}`,
-        customer: customerName,
-        email: customerEmail,
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        status: 'Processing',
-        total: Math.round(total),
-        items: itemCount,
-        address: fullAddress,
-        payment: `Card ending ${formData.cardNumber.slice(-4) || '4242'}`,
-        trackingNumber: 'Pending Fulfillment'
-      });
-    } catch (err) {
-      console.warn('Backend order creation warning (using offline fallback):', err.message);
-      setOrderId(newOrderId);
-      addStoredOrder({
-        id: `#${newOrderId}`,
-        customer: customerName,
-        email: customerEmail,
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        status: 'Processing',
-        total: Math.round(total),
-        items: itemCount,
-        address: fullAddress,
-        payment: `Card ending ${formData.cardNumber.slice(-4) || '4242'}`,
-        trackingNumber: 'Pending Fulfillment'
-      });
+      setOrderId(res?.data?.orderId || res?.data?._id || newId);
+    } catch {
+      setOrderId(newId);
     } finally {
-      setSubmittingOrder(false);
-      setCheckoutStep(3);
+      setSubmitting(false);
+      setStep(3);
       clearCart();
     }
   };
 
-  // Step 3: Order Confirmed
-  if (checkoutStep === 3) {
+  /* ── Confirmation screen ── */
+  if (step === 3) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 py-16 text-center max-w-xl mx-auto">
-        <div className="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-6 shadow-md shadow-emerald-500/10">
-          <CheckCircle className="w-10 h-10" />
+      <div style={{ minHeight: '70vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 24px', background: '#fff', textAlign: 'center' }}>
+        <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#e8f8f1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, marginBottom: 20 }}>✓</div>
+        <h2 style={{ fontSize: 28, fontWeight: 700, color: '#101828', marginBottom: 8 }}>Order placed!</h2>
+        <p style={{ fontSize: 15, color: '#667085', marginBottom: 6 }}>Your order <strong style={{ color: '#101828' }}>#{orderId}</strong> is confirmed.</p>
+        <p style={{ fontSize: 13, color: '#667085', marginBottom: 32 }}>You'll receive a confirmation email shortly.</p>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn-secondary" onClick={() => navigate('/')}>Continue shopping</button>
+          <button className="btn-primary"   onClick={() => navigate('/search')}>Browse more</button>
         </div>
-        <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-1">
-          Payment Successful
-        </span>
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">
-          Thank you for your order!
-        </h1>
-        <p className="text-sm text-slate-500 mb-6">
-          Order <strong>#{orderId}</strong> has been placed and is being prepared for express delivery. A confirmation email has been dispatched to <strong>{formData.email || 'your email'}</strong>.
-        </p>
-
-        <div className="w-full p-6 rounded-2xl bg-white border border-slate-200 text-left mb-8 shadow-xs">
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Order Details</h4>
-          <div className="space-y-2 text-xs text-slate-700">
-            <div className="flex justify-between">
-              <span>Delivery Address:</span>
-              <span className="font-semibold text-slate-900">{formData.address}, {formData.city}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Estimated Delivery:</span>
-              <span className="font-semibold text-blue-600">Within 2 Business Days</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Carrier:</span>
-              <span className="font-semibold text-slate-900">FedEx Priority Tech Express</span>
-            </div>
-          </div>
-        </div>
-
-        <Link
-          to="/"
-          className="px-8 py-3.5 rounded-xl bg-slate-900 hover:bg-blue-600 text-white font-bold text-xs shadow-md transition-colors"
-        >
-          Return to Storefront
-        </Link>
       </div>
     );
   }
 
-  // Cart Empty State
-  if (items.length === 0) {
+  /* ── Empty cart ── */
+  if (items.length === 0 && step === 1) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 py-16 text-center max-w-md mx-auto">
-        <div className="w-20 h-20 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
-          <ShoppingCart className="w-8 h-8" />
-        </div>
-        <h2 className="text-2xl font-black text-slate-900 mb-2">Your Cart is Empty</h2>
-        <p className="text-sm text-slate-500 mb-6">
-          You haven't added any devices to your cart yet. Explore our curated flagship lineup.
-        </p>
-        <Link
-          to="/search"
-          className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-colors flex items-center gap-2"
-        >
-          <span>Start Shopping</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
+      <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 64, background: '#fff', textAlign: 'center' }}>
+        <p style={{ fontSize: 40, marginBottom: 16 }}>🛒</p>
+        <h2 style={{ fontSize: 22, fontWeight: 700, color: '#101828', marginBottom: 8 }}>Your cart is empty</h2>
+        <p style={{ fontSize: 14, color: '#667085', marginBottom: 24 }}>Add something from our collection.</p>
+        <Link to="/search" className="btn-primary">Browse products</Link>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center w-full min-h-screen bg-slate-50/50 pb-20">
-      
-      {/* ── Page Header & Stepper ── */}
-      <div className="w-full bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-              {checkoutStep === 1 ? 'Shopping Cart' : 'Checkout & Express Delivery'}
-            </h1>
-            <p className="text-xs text-slate-500 mt-1">
-              Review your items, apply coupons, and checkout securely.
-            </p>
-          </div>
+    <div style={{ background: '#f4f7fb', minHeight: '100vh', padding: '32px 64px' }}>
 
-          {/* Stepper pills */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setCheckoutStep(1)}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                checkoutStep === 1 ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              <span>1. Cart Items</span>
-            </button>
-            <span className="text-slate-300">→</span>
-            <button
-              onClick={() => setCheckoutStep(2)}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                checkoutStep === 2 ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              <span>2. Shipping & Payment</span>
-            </button>
-          </div>
-        </div>
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 36, fontWeight: 400, color: '#101828', margin: '0 0 6px' }}>Your checkout</h1>
+        <p style={{ fontSize: 13, color: '#667085', margin: 0 }}>
+          {itemCount} item{itemCount !== 1 ? 's' : ''} · Estimated delivery within 3–5 business days
+        </p>
       </div>
 
-      {/* ── Content Grid ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* ── Left Column: Items or Checkout Form (cols 8) ── */}
-          <div className="lg:col-span-8 flex flex-col gap-6">
-            
-            {checkoutStep === 1 ? (
-              /* Step 1: Cart Items List */
-              <div className="bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-xs">
-                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                  <h3 className="text-base font-bold text-slate-900">
-                    Cart Items ({itemCount})
-                  </h3>
-                  <button
-                    onClick={clearCart}
-                    className="text-xs text-rose-600 hover:underline font-semibold"
-                  >
-                    Clear Cart
-                  </button>
-                </div>
+      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
 
-                <div className="divide-y divide-slate-100">
-                  {items.map((item) => (
-                    <div key={`${item.id}-${item.selectedStorage || ''}-${item.selectedColor || ''}`} className="p-6 flex flex-col sm:flex-row items-center gap-6">
-                      <div className="w-24 h-24 rounded-2xl bg-slate-50 p-2 border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center">
-                        <img src={item.image} alt={item.name} className="max-h-full max-w-full object-contain" />
-                      </div>
+        {/* ── Left column ── */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-                      <div className="flex-1 min-w-0 text-center sm:text-left">
-                        <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">{item.brand}</span>
-                        <Link to={`/product/${item.id}`} className="text-base font-bold text-slate-900 hover:text-blue-600 transition-colors block truncate">
-                          {item.name}
-                        </Link>
-                        <div className="flex flex-wrap gap-2 justify-center sm:justify-start text-xs text-slate-400 mt-1">
-                          {item.selectedStorage && <span>Storage: {item.selectedStorage}</span>}
-                          {item.selectedColor && <span>• Color: {item.selectedColor}</span>}
-                          <span className="text-emerald-600 font-semibold">• In Stock</span>
-                        </div>
-                      </div>
-
-                      {/* Quantity Stepper */}
-                      <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 px-2 h-10 shrink-0">
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="w-6 h-6 rounded text-slate-600 hover:bg-slate-200 text-sm font-bold flex items-center justify-center"
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <span className="w-8 text-center text-xs font-bold text-slate-900">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="w-6 h-6 rounded text-slate-600 hover:bg-slate-200 text-sm font-bold flex items-center justify-center"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      {/* Price & Remove */}
-                      <div className="text-right shrink-0">
-                        <span className="text-base font-black text-slate-900 block">
-                          ${(item.price * item.quantity).toLocaleString()}
-                        </span>
-                        <button
-                          onClick={() => removeFromCart(item.id)}
-                          className="text-xs text-slate-400 hover:text-rose-600 mt-1 flex items-center gap-1 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" /> Remove
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              /* Step 2: Shipping & Payment Form */
-              <form onSubmit={handlePlaceOrder} className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-xs flex flex-col gap-6">
-                <div>
-                  <h3 className="text-lg font-black text-slate-900 mb-1">Shipping Address</h3>
-                  <p className="text-xs text-slate-500 mb-4">Where should we deliver your order?</p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">First Name</label>
-                      <input
-                        type="text"
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleFormChange}
-                        required
-                        className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Last Name</label>
-                      <input
-                        type="text"
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleFormChange}
-                        required
-                        className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Email Address</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleFormChange}
-                        required
-                        className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Phone Number</label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleFormChange}
-                        required
-                        className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Street Address</label>
-                      <input
-                        type="text"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleFormChange}
-                        required
-                        className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">City</label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={formData.city}
-                        onChange={handleFormChange}
-                        required
-                        className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">State</label>
-                      <input
-                        type="text"
-                        name="state"
-                        value={formData.state}
-                        onChange={handleFormChange}
-                        required
-                        className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Postal / ZIP Code</label>
-                      <input
-                        type="text"
-                        name="zip"
-                        value={formData.zip}
-                        onChange={handleFormChange}
-                        required
-                        className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-6 border-t border-slate-100">
-                  <h3 className="text-lg font-black text-slate-900 mb-1 flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-blue-600" /> Payment Information
-                  </h3>
-                  <p className="text-xs text-slate-500 mb-4">All transactions are encrypted with 256-bit SSL encryption.</p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="sm:col-span-2">
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Card Number</label>
-                      <input
-                        type="text"
-                        name="cardNumber"
-                        value={formData.cardNumber}
-                        onChange={handleFormChange}
-                        required
-                        className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Expiry / CVV</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          name="expiry"
-                          value={formData.expiry}
-                          onChange={handleFormChange}
-                          required
-                          className="w-full h-11 px-2 text-center rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:outline-none"
-                        />
-                        <input
-                          type="password"
-                          name="cvv"
-                          value={formData.cvv}
-                          onChange={handleFormChange}
-                          required
-                          className="w-full h-11 px-2 text-center rounded-xl bg-slate-50 border border-slate-200 text-xs focus:bg-white focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setCheckoutStep(1)}
-                    className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1.5"
-                  >
-                    <ArrowLeft className="w-4 h-4" /> Back to Cart
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submittingOrder}
-                    className="px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-blue-500/20 flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
-                  >
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>{submittingOrder ? 'Processing Order...' : `Place Order ($${total.toLocaleString(undefined, { maximumFractionDigits: 2 })})`}</span>
-                  </button>
-                </div>
-              </form>
-            )}
-
-          </div>
-
-          {/* ── Right Column: Order Summary (cols 4) ── */}
-          <div className="lg:col-span-4 flex flex-col gap-6">
-            
-            {/* Promo Code Box */}
-            <div className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-xs">
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-wide block mb-2">
-                Promotional Code
-              </span>
-              <form onSubmit={handleApplyCoupon} className="flex gap-2">
-                <input
-                  type="text"
-                  value={couponInput}
-                  onChange={(e) => setCouponInput(e.target.value)}
-                  placeholder="e.g. VOLT10 or TECH20"
-                  className="flex-1 h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs uppercase font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  type="submit"
-                  className="px-4 h-10 rounded-xl bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold transition-colors"
-                >
-                  Apply
-                </button>
-              </form>
-              {couponSuccess && <p className="text-xs text-emerald-600 mt-2 font-medium">{couponSuccess}</p>}
-              {couponError && <p className="text-xs text-rose-600 mt-2 font-medium">{couponError}</p>}
-              {promoDiscount > 0 && (
-                <div className="mt-3 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between font-semibold">
-                  <span>Coupon {promoCode} active</span>
-                  <span>-{promoDiscount}% OFF</span>
-                </div>
-              )}
+          {/* Cart items panel */}
+          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #dde4ee', padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <p style={{ fontSize: 16, fontWeight: 700, color: '#101828', margin: 0 }}>Cart items</p>
+              <span className="badge badge-gray">{itemCount}</span>
             </div>
 
-            {/* Financial Summary */}
-            <div className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-xs flex flex-col gap-4">
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                Order Summary
-              </h3>
-
-              <div className="space-y-2.5 text-xs text-slate-600 border-b border-slate-100 pb-4">
-                <div className="flex justify-between">
-                  <span>Subtotal ({itemCount} items):</span>
-                  <span className="font-semibold text-slate-900">${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                </div>
-                {discount > 0 && (
-                  <div className="flex justify-between text-emerald-600 font-semibold">
-                    <span>Discount ({promoDiscount}%):</span>
-                    <span>-${discount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            {items.map((item, idx) => {
+              const iid = item._id || item.id;
+              return (
+                <div key={iid} style={{ display: 'flex', gap: 16, paddingBottom: idx < items.length - 1 ? 20 : 0, marginBottom: idx < items.length - 1 ? 20 : 0, borderBottom: idx < items.length - 1 ? '1px solid #f4f7fb' : 'none' }}>
+                  {/* Image */}
+                  <div style={{ width: 110, height: 96, borderRadius: 10, overflow: 'hidden', background: '#f4f7fb', flexShrink: 0 }}>
+                    <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={e => { e.currentTarget.style.display = 'none'; }} />
                   </div>
-                )}
-                <div className="flex justify-between">
-                  <span>Estimated Tax (8%):</span>
-                  <span className="font-semibold text-slate-900">${tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  {/* Info */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <p style={{ fontSize: 14, fontWeight: 600, color: '#101828', margin: 0 }}>{item.name}</p>
+                        {item.brand && <p style={{ fontSize: 12, color: '#667085', margin: '2px 0 0' }}>{item.brand} · {item.category}</p>}
+                        <span className="badge badge-green" style={{ marginTop: 8, display: 'inline-flex' }}>{item.stock > 0 ? 'In stock' : 'Limited'}</span>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
+                        <p style={{ fontSize: 16, fontWeight: 600, color: '#101828', margin: 0 }}>${(item.price * item.quantity).toLocaleString()}</p>
+                        <p style={{ fontSize: 11, color: '#667085', margin: '2px 0 0' }}>${item.price?.toLocaleString()} each</p>
+                      </div>
+                    </div>
+                    {/* Qty + actions */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 4 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#eef3f9', borderRadius: 999, padding: '4px 12px' }}>
+                        <button onClick={() => updateQuantity(iid, item.quantity - 1)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#667085', fontFamily: 'inherit', lineHeight: 1 }}>−</button>
+                        <span style={{ fontSize: 13, color: '#101828', minWidth: 16, textAlign: 'center' }}>{item.quantity}</span>
+                        <button onClick={() => updateQuantity(iid, item.quantity + 1)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#667085', fontFamily: 'inherit', lineHeight: 1 }}>+</button>
+                      </div>
+                      <button onClick={() => removeFromCart(iid)}
+                        style={{ fontSize: 12, color: '#d92d20', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                        Remove
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Shipping:</span>
-                  <span className="font-semibold text-slate-900">
-                    {shipping === 0 ? <strong className="text-emerald-600">FREE</strong> : `$${shipping}`}
+              );
+            })}
+
+            {/* Promo code */}
+            <form onSubmit={handleCoupon} style={{ marginTop: 20, display: 'flex', gap: 10 }}>
+              <input
+                value={couponInput}
+                onChange={e => setCouponInput(e.target.value)}
+                placeholder="Promo code (e.g. VOLT10)"
+                className="input-field"
+                style={{ flex: 1, height: 42 }}
+              />
+              <button type="submit" className="btn-primary" style={{ height: 42, flexShrink: 0 }}>Apply</button>
+            </form>
+            {couponError   && <p style={{ fontSize: 12, color: '#d92d20', marginTop: 6 }}>{couponError}</p>}
+            {couponSuccess && <p style={{ fontSize: 12, color: '#078a55', marginTop: 6 }}>{couponSuccess}</p>}
+          </div>
+
+          {/* Contact & Shipping form */}
+          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #dde4ee', padding: 20 }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#101828', margin: '0 0 20px' }}>Contact & Shipping</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', gap: 14 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>First name</label>
+                  <input name="firstName" value={form.firstName} onChange={handleFormChange} className="input-field" placeholder="Jordan" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>Last name</label>
+                  <input name="lastName" value={form.lastName} onChange={handleFormChange} className="input-field" placeholder="Smith" />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 14 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>Email</label>
+                  <input name="email" type="email" value={form.email} onChange={handleFormChange} className="input-field" placeholder="you@example.com" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>Phone</label>
+                  <input name="phone" value={form.phone} onChange={handleFormChange} className="input-field" placeholder="+1 (555) 000-0000" />
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>Address</label>
+                <input name="address" value={form.address} onChange={handleFormChange} className="input-field" placeholder="123 Main St" />
+              </div>
+              <div style={{ display: 'flex', gap: 14 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>City</label>
+                  <input name="city" value={form.city} onChange={handleFormChange} className="input-field" placeholder="New York" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>State</label>
+                  <input name="state" value={form.state} onChange={handleFormChange} className="input-field" placeholder="NY" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>ZIP</label>
+                  <input name="zip" value={form.zip} onChange={handleFormChange} className="input-field" placeholder="10001" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Delivery method */}
+          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #dde4ee', padding: 20 }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#101828', margin: '0 0 16px' }}>Delivery method</p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              {[
+                { value: 'standard', label: 'Standard', sub: '5-7 business days', price: 'Free' },
+                { value: 'express',  label: 'Express',  sub: '1-2 business days', price: '$15.00' },
+              ].map(opt => (
+                <label key={opt.value} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, padding: 16, border: `1px solid ${form.deliveryMethod === opt.value ? '#2563eb' : '#dde4ee'}`, borderRadius: 10, cursor: 'pointer', background: form.deliveryMethod === opt.value ? '#f4f9ff' : '#fff' }}>
+                  <input type="radio" name="deliveryMethod" value={opt.value} checked={form.deliveryMethod === opt.value} onChange={handleFormChange}
+                    style={{ accentColor: '#2563eb' }} />
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#101828', margin: 0 }}>{opt.label} — {opt.price}</p>
+                    <p style={{ fontSize: 11, color: '#667085', margin: 0 }}>{opt.sub}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Payment */}
+          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #dde4ee', padding: 20 }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#101828', margin: '0 0 16px' }}>Payment</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>Card number</label>
+                <input name="cardNumber" value={form.cardNumber} onChange={handleFormChange} className="input-field" placeholder="4242 4242 4242 4242" maxLength={19} />
+              </div>
+              <div style={{ display: 'flex', gap: 14 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>Expiry</label>
+                  <input name="expiry" value={form.expiry} onChange={handleFormChange} className="input-field" placeholder="MM/YY" maxLength={5} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>CVV</label>
+                  <input name="cvv" value={form.cvv} onChange={handleFormChange} className="input-field" placeholder="123" maxLength={4} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Right: order summary ── */}
+        <div style={{ width: 380, flexShrink: 0, position: 'sticky', top: 100 }}>
+          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #dde4ee', padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#101828', margin: 0 }}>Order summary</p>
+
+            {/* Items preview */}
+            {items.map(item => (
+              <div key={item._id || item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 6, overflow: 'hidden', background: '#f4f7fb', flexShrink: 0 }}>
+                    <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={e => { e.currentTarget.style.display = 'none'; }} />
+                  </div>
+                  <span style={{ fontSize: 12, color: '#101828', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.name} ×{item.quantity}
                   </span>
                 </div>
-              </div>
-
-              <div className="flex justify-between items-baseline pt-1">
-                <span className="text-sm font-bold text-slate-900">Total:</span>
-                <span className="text-2xl font-black text-slate-900">
-                  ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#101828', flexShrink: 0 }}>
+                  ${(item.price * item.quantity).toLocaleString()}
                 </span>
               </div>
+            ))}
 
-              {checkoutStep === 1 && (
-                <button
-                  onClick={() => setCheckoutStep(2)}
-                  className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-all mt-2"
-                >
-                  <span>Proceed to Checkout</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              )}
-
-              <div className="pt-2 flex flex-col gap-2 text-[11px] text-slate-400 text-center">
-                <span className="flex items-center justify-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> 30-Day Money Back Guarantee
-                </span>
-                <span className="flex items-center justify-center gap-1.5">
-                  <Truck className="w-3.5 h-3.5 text-blue-500" /> Free 2-Day Express Shipping over $500
-                </span>
-              </div>
+            <div style={{ borderTop: '1px solid #f4f7fb', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <SummaryLine label="Subtotal"  value={`$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
+              {discount > 0 && <SummaryLine label={`Discount (${promoDiscount}%)`} value={`-$${discount.toFixed(2)}`} green />}
+              <SummaryLine label="Tax (8%)"  value={`$${tax.toFixed(2)}`} />
+              <SummaryLine label="Shipping"  value={shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`} green={shipping === 0} />
             </div>
 
-          </div>
+            <div style={{ borderTop: '1px solid #dde4ee', paddingTop: 14 }}>
+              <SummaryLine label="Total" value={`$${total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`} bold large />
+            </div>
 
+            <button
+              className="btn-primary"
+              onClick={handlePlaceOrder}
+              disabled={submitting || items.length === 0}
+              style={{ width: '100%', marginTop: 4, background: submitting ? '#93c5fd' : '#2563eb', borderColor: submitting ? '#93c5fd' : '#2563eb' }}
+            >
+              {submitting ? 'Placing order…' : 'Place order'}
+            </button>
+
+            <p style={{ fontSize: 11, color: '#667085', textAlign: 'center', margin: 0 }}>
+              🔒 Secure checkout · SSL encrypted
+            </p>
+          </div>
         </div>
       </div>
-
     </div>
   );
 }

@@ -1,113 +1,85 @@
-﻿import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+﻿import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+
+const MENU = [
+  { name: 'Dashboard',          path: '/admin',              exact: true },
+  { name: 'Analytics & reports', path: '/admin/analytics' },
+  { name: 'Products',           path: '/admin/products' },
+  { name: 'Inventory',          path: '/admin/inventory' },
+  { name: 'Categories',         path: '/admin/categories' },
+  { name: 'Orders',             path: '/admin/orders' },
+  { name: 'Customers',          path: '/admin/customers' },
+  { name: 'Settings',           path: '/admin/settings' },
+];
 
 export default function AdminSidebar({ mobileOpen, onClose }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const menuItems = [
-    { name: "Dashboard",          path: "/admin",            exact: true,  icon: "◈" },
-    { name: "Analytics",          path: "/admin/analytics",                icon: "◉" },
-    { name: "Products",           path: "/admin/products",                 icon: "▦" },
-    { name: "Inventory",          path: "/admin/inventory",                icon: "▤" },
-    { name: "Categories",         path: "/admin/categories",               icon: "◫" },
-    { name: "Orders",             path: "/admin/orders",                   icon: "◳" },
-    { name: "Customers",          path: "/admin/customers",                icon: "◎" },
-    { name: "Settings",           path: "/admin/settings",                 icon: "◬" },
-  ];
-
   const isActive = (item) =>
     item.exact ? location.pathname === item.path : location.pathname.startsWith(item.path);
 
-  const handleLogout = () => { logout(); navigate("/login"); };
+  const handleLogout = () => { logout(); navigate('/login'); };
 
-  const sidebarContent = (
+  const sidebar = (
     <div style={{
-      background: "#ffffff",
-      borderRight: "1px solid #E8EDF5",
-      display: "flex",
-      flexDirection: "column",
-      gap: 2,
-      height: "100%",
-      width: 220,
-      padding: "20px 12px",
-      userSelect: "none",
-      overflowY: "auto",
-      boxShadow: "2px 0 8px rgba(15, 23, 42, 0.04)",
+      background: '#0b1220', width: 232, minHeight: '100vh',
+      display: 'flex', flexDirection: 'column', gap: 8,
+      padding: '24px 18px', overflowY: 'auto', flexShrink: 0,
     }}>
-      {/* Logo */}
-      <div style={{ padding: "0 8px 16px", borderBottom: "1px solid #F1F5F9", marginBottom: 8 }}>
-        <span style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.5px", display: "block" }}>
-          VOLT<span style={{ color: "#2563eb" }}>.</span>
-        </span>
-        <span style={{ fontSize: 9, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>
-          Admin workspace
-        </span>
-      </div>
+      {/* Brand */}
+      <p style={{ fontSize: 22, fontWeight: 800, color: '#fff', margin: '0 0 0px', letterSpacing: '-0.5px' }}>
+        VOLT<span style={{ color: '#2563eb' }}>•</span> ADMIN
+      </p>
+      <p style={{ fontSize: 11, color: '#98a2b3', margin: '0 0 12px', letterSpacing: '0.08em', textTransform: 'none' }}>
+        COMMERCE WORKSPACE
+      </p>
 
-      {menuItems.map((item) => {
+      {/* Nav items */}
+      {MENU.map(item => {
         const active = isActive(item);
         return (
-          <Link
-            key={item.name}
-            to={item.path}
-            onClick={onClose}
+          <Link key={item.path} to={item.path} onClick={onClose}
             style={{
-              width: "100%",
-              height: 38,
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "0 10px",
-              borderRadius: 10,
-              fontSize: 13,
-              fontWeight: active ? 600 : 500,
-              textDecoration: "none",
-              color: active ? "#2563eb" : "#64748b",
-              background: active ? "#EFF6FF" : "transparent",
-              transition: "all 0.12s",
-              letterSpacing: "-0.1px",
+              height: 42, display: 'flex', alignItems: 'center', paddingLeft: 12, borderRadius: 10,
+              textDecoration: 'none', fontSize: 13, fontWeight: active ? 400 : 500,
+              color: active ? '#fff' : '#b7c1d1',
+              background: active ? '#2563eb' : 'transparent',
+              transition: 'background 0.15s, color 0.15s',
+              flexShrink: 0,
             }}
-            onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = "#F8FAFD"; e.currentTarget.style.color = "#0f172a"; } }}
-            onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#64748b"; } }}
+            onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff'; } }}
+            onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#b7c1d1'; } }}
           >
-            <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0, opacity: active ? 1 : 0.6 }}>{item.icon}</span>
             {item.name}
-            {active && (
-              <span style={{ marginLeft: "auto", width: 5, height: 5, borderRadius: "50%", background: "#2563eb", flexShrink: 0 }} />
-            )}
           </Link>
         );
       })}
 
-      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #F1F5F9" }}>
-        <Link
-          to="/"
-          style={{ width: "100%", height: 36, display: "flex", alignItems: "center", gap: 8, padding: "0 10px", borderRadius: 10, fontSize: 12, color: "#64748b", textDecoration: "none", marginBottom: 4 }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "#F8FAFD"; e.currentTarget.style.color = "#0f172a"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#64748b"; }}
-        >
-          ← Customer View
+      {/* Spacer + bottom links */}
+      <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <Link to="/" style={{ height: 38, display: 'flex', alignItems: 'center', paddingLeft: 12, borderRadius: 10, textDecoration: 'none', fontSize: 12, color: '#667085', transition: 'color 0.15s' }}
+          onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+          onMouseLeave={e => e.currentTarget.style.color = '#667085'}>
+          ← Customer store
         </Link>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 10, background: "#F8FAFD", marginBottom: 6 }}>
-          <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#2563eb,#4f46e5)", color: "#fff", fontWeight: 700, fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            {user?.name ? user.name.charAt(0) : "A"}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.04)' }}>
+          <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#2563eb', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {user?.name?.charAt(0) || 'A'}
           </div>
-          <div style={{ flex: 1, overflow: "hidden" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>{user?.name || "Admin"}</p>
-            <p style={{ fontSize: 10, color: "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>{user?.email || "admin@volt.com"}</p>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name || 'Admin'}</p>
+            <p style={{ fontSize: 10, color: '#667085', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</p>
           </div>
         </div>
 
-        <button
-          onClick={handleLogout}
-          style={{ width: "100%", height: 36, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 10px", borderRadius: 10, fontSize: 12, fontWeight: 600, color: "#dc2626", background: "none", border: "none", cursor: "pointer", transition: "background 0.12s" }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "#FEF2F2"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
-        >
-          Sign Out
+        <button onClick={handleLogout}
+          style={{ height: 38, display: 'flex', alignItems: 'center', paddingLeft: 12, borderRadius: 10, background: 'none', border: 'none', fontSize: 12, fontWeight: 600, color: '#d92d20', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.15s' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(217,45,32,0.12)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+          Sign out
         </button>
       </div>
     </div>
@@ -115,14 +87,19 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
 
   return (
     <>
-      <aside className="hidden lg:block shrink-0 h-screen sticky top-0">
-        {sidebarContent}
+      <aside style={{ display: 'none' }} className="lg-show-sidebar">
+        {sidebar}
       </aside>
+      {/* Desktop: always visible */}
+      <aside style={{ flexShrink: 0, height: '100vh', position: 'sticky', top: 0 }} className="desktop-sidebar">
+        {sidebar}
+      </aside>
+      {/* Mobile overlay */}
       {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div className="fixed inset-0 bg-black/40" onClick={onClose} />
-          <div className="relative z-10 h-full animate-slide-in">
-            {sidebarContent}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex' }}>
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={onClose} />
+          <div style={{ position: 'relative', zIndex: 10, animation: 'slideIn 0.3s ease-out' }}>
+            {sidebar}
           </div>
         </div>
       )}
