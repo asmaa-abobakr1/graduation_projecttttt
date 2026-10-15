@@ -87,10 +87,7 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
 
   return (
     <>
-      <aside style={{ display: 'none' }} className="lg-show-sidebar">
-        {sidebar}
-      </aside>
-      {/* Desktop: always visible */}
+      {/* Desktop: always visible, hidden via media query on mobile */}
       <aside style={{ flexShrink: 0, height: '100vh', position: 'sticky', top: 0 }} className="desktop-sidebar">
         {sidebar}
       </aside>

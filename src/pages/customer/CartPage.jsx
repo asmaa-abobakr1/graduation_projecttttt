@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { ordersAPI } from '../../services/api';
-import { addStoredOrder } from '../../utils/exportUtils';
 
 function SummaryLine({ label, value, bold, large, green, red }) {
   return (
@@ -33,7 +32,6 @@ export default function CartPage() {
   const [form, setForm] = useState({
     firstName: '', lastName: '', email: user?.email || '', phone: '',
     address: '', city: '', state: '', zip: '',
-    cardNumber: '', expiry: '', cvv: '',
     deliveryMethod: 'standard',
   });
 
@@ -54,24 +52,24 @@ export default function CartPage() {
 
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
-    const required = ['firstName','lastName','email','phone','address','city','state','zip','cardNumber','expiry','cvv'];
+    // Validate shipping fields only — no card fields needed (COD)
+    const required = ['firstName', 'lastName', 'email', 'phone', 'address', 'city', 'state', 'zip'];
     if (required.some(k => !form[k].trim())) {
-      alert('Please fill out all required fields.');
+      alert('Please fill out all required shipping fields.');
       return;
     }
     setSubmitting(true);
-    const newId = 'VLT-' + Math.floor(100000 + Math.random() * 900000);
-    const customerName  = `${form.firstName} ${form.lastName}`.trim();
-    const fullAddress   = `${form.address}, ${form.city}, ${form.state} ${form.zip}`;
+    const customerName = `${form.firstName} ${form.lastName}`.trim();
+    const fullAddress  = `${form.address}, ${form.city}, ${form.state} ${form.zip}`;
     try {
       const res = await ordersAPI.create({
         customerName, customerEmail: form.email.trim(), address: fullAddress,
         items: items.map(i => ({ productId: i._id || i.id, productName: i.name, productImage: i.image, price: i.price, quantity: i.quantity })),
         promoCode, subtotal, discount, tax, shipping, total: Math.round(total),
       });
-      setOrderId(res?.data?.orderId || res?.data?._id || newId);
+      setOrderId(res?.data?.orderId || res?.data?._id || 'VLT-' + Math.floor(100000 + Math.random() * 900000));
     } catch {
-      setOrderId(newId);
+      setOrderId('VLT-' + Math.floor(100000 + Math.random() * 900000));
     } finally {
       setSubmitting(false);
       setStep(3);
@@ -252,23 +250,14 @@ export default function CartPage() {
             </div>
           </div>
 
-          {/* Payment */}
+          {/* Payment — Cash on Delivery */}
           <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #dde4ee', padding: 20 }}>
-            <p style={{ fontSize: 16, fontWeight: 700, color: '#101828', margin: '0 0 16px' }}>Payment</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#101828', margin: '0 0 16px' }}>Payment method</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: '#e8f8f1', borderRadius: 12, border: '1.5px solid #078a55' }}>
+              <span style={{ fontSize: 24 }}>💵</span>
               <div>
-                <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>Card number</label>
-                <input name="cardNumber" value={form.cardNumber} onChange={handleFormChange} className="input-field" placeholder="4242 4242 4242 4242" maxLength={19} />
-              </div>
-              <div style={{ display: 'flex', gap: 14 }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>Expiry</label>
-                  <input name="expiry" value={form.expiry} onChange={handleFormChange} className="input-field" placeholder="MM/YY" maxLength={5} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>CVV</label>
-                  <input name="cvv" value={form.cvv} onChange={handleFormChange} className="input-field" placeholder="123" maxLength={4} />
-                </div>
+                <p style={{ fontSize: 14, fontWeight: 700, color: '#078a55', margin: 0 }}>Cash on Delivery</p>
+                <p style={{ fontSize: 12, color: '#667085', margin: '2px 0 0' }}>Pay when your order arrives — no card needed.</p>
               </div>
             </div>
           </div>
@@ -318,7 +307,7 @@ export default function CartPage() {
             </button>
 
             <p style={{ fontSize: 11, color: '#667085', textAlign: 'center', margin: 0 }}>
-              🔒 Secure checkout · SSL encrypted
+              💵 Cash on delivery · Pay when your order arrives
             </p>
           </div>
         </div>

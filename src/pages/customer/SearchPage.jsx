@@ -136,7 +136,10 @@ export default function SearchPage() {
 
   const filteredProducts = useMemo(() => {
     let list = [...products];
-    if (showWishlistOnly) list = list.filter(p => wishlist.includes(p.id) || (p._id && wishlist.includes(p._id)));
+    if (showWishlistOnly) list = list.filter(p => {
+      const id = String(p._id || p.id || '');
+      return id && wishlist.includes(id);
+    });
     if (query.trim()) {
       const tokens = query.toLowerCase().trim().split(/\s+/);
       list = list.filter(p => {
