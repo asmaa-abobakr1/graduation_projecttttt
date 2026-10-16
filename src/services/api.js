@@ -4,7 +4,7 @@
  * Base URL comes from Vite env: VITE_API_URL
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // ─── Helper: get stored JWT ───────────────────────────────────────────────────
 const getToken = () => localStorage.getItem('volt_token');
