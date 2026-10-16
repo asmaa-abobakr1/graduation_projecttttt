@@ -11,7 +11,7 @@ function StarRating({ rating = 5 }) {
 }
 
 export default function ComparisonPage() {
-  const { isMobile } = useResponsive();
+  const { isMobile, isTablet } = useResponsive();
   const { getCompareProducts, toggleCompare, clearCompare } = useProducts();
   const { addToCart } = useCart();
   const products = getCompareProducts();
@@ -49,10 +49,10 @@ export default function ComparisonPage() {
       </div>
 
       {/* Table */}
-      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: isMobile ? 'touch' : undefined }}>
-        {isMobile && products.length > 2 && (
-          <p style={{ fontSize: 12, color: '#667085', marginBottom: 8, textAlign: 'center' }}>
-            Scroll horizontally to compare
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        {isMobile && products.length > 1 && (
+          <p style={{textAlign: 'center', color: '#888', fontSize: '13px', marginBottom: '8px'}}>
+            ← Scroll to compare →
           </p>
         )}
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
