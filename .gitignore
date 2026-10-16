@@ -25,7 +25,3 @@ dist-ssr
 
 # Secret files - do not commit
 mpc.json
-.env
-.env.production
-.env.local
-.env.*.local
