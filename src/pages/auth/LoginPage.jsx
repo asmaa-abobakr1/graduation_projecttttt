@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import useResponsive from '../../hooks/useResponsive';
+import { useResponsive } from '../../hooks/useResponsive';
 
 export default function LoginPage() {
   const [email,     setEmail]     = useState('');
@@ -46,6 +46,7 @@ export default function LoginPage() {
   return (
     <div style={{
       display: 'flex',
+      flexDirection: isNarrow ? 'column' : 'row',
       height: '100vh',
       background: '#fff',
       overflow: isNarrow ? 'auto' : 'hidden',
@@ -107,7 +108,7 @@ export default function LoginPage() {
                 onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: '' })); }}
                 placeholder="you@example.com"
                 className={`input-field${errors.email ? ' error' : ''}`}
-                style={{ width: '100%', minHeight: 44 }}
+                style={{ width: '100%', minHeight: isMobile ? 48 : 44 }}
               />
               {errors.email && <p style={{ fontSize: 11, color: '#d92d20', margin: 0 }}>{errors.email}</p>}
             </div>
@@ -121,7 +122,7 @@ export default function LoginPage() {
                 onChange={e => { setPassword(e.target.value); setErrors(p => ({ ...p, password: '' })); }}
                 placeholder="••••••••"
                 className={`input-field${errors.password ? ' error' : ''}`}
-                style={{ width: '100%', minHeight: 44 }}
+                style={{ width: '100%', minHeight: isMobile ? 48 : 44 }}
               />
               {errors.password && <p style={{ fontSize: 11, color: '#d92d20', margin: 0 }}>{errors.password}</p>}
             </div>
