@@ -20,7 +20,7 @@ export default function ProductDetailsPage() {
   const { getProduct, toggleWishlist, isWishlisted, toggleCompare, compareList } = useProducts();
   const { addToCart }    = useCart();
   const navigate         = useNavigate();
-  const { isMobile }     = useResponsive();
+  const { isMobile, isTablet } = useResponsive();
 
   const [product, setProduct]         = useState(getProduct(id));
   const [loading, setLoading]         = useState(!product);
@@ -84,13 +84,13 @@ export default function ProductDetailsPage() {
             }>
               {images.map((img, i) => (
                 <div key={i} onClick={() => setActiveImg(i)}
-                  style={{ width: isMobile ? 64 : 90, height: isMobile ? 64 : 90, borderRadius: 10, overflow: 'hidden', cursor: 'pointer', flexShrink: 0, border: `2px solid ${i === activeImg ? '#2563eb' : '#dde4ee'}`, transition: 'border-color 0.15s' }}>
+                  style={{ width: isMobile ? 70 : 90, height: isMobile ? 70 : 90, borderRadius: 10, overflow: 'hidden', cursor: 'pointer', flexShrink: 0, border: `2px solid ${i === activeImg ? '#2563eb' : '#dde4ee'}`, transition: 'border-color 0.15s' }}>
                   <img src={img} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ))}
             </div>
             {/* Main image */}
-            <div style={{ flex: 1, height: isMobile ? 280 : 610, borderRadius: 24, overflow: 'hidden', background: '#f4f7fb' }}>
+            <div style={{ flex: 1, height: isMobile ? 300 : 610, borderRadius: 24, overflow: 'hidden', background: '#f4f7fb' }}>
               <img
                 src={images[activeImg] || product.image}
                 alt={product.name}
@@ -137,9 +137,9 @@ export default function ProductDetailsPage() {
             </div>
 
             {/* Qty + Add to cart */}
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexDirection: isMobile ? 'column' : 'row' }}>
               {/* Qty control */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#eef3f9', borderRadius: 999, padding: '5px 14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#eef3f9', borderRadius: 999, padding: '5px 14px', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'center' : 'flex-start' }}>
                 <button onClick={() => setQty(q => Math.max(1, q - 1))}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#667085', lineHeight: 1, fontFamily: 'inherit' }}>−</button>
                 <span style={{ fontSize: 13, color: '#101828', minWidth: 20, textAlign: 'center' }}>{qty}</span>
@@ -152,30 +152,30 @@ export default function ProductDetailsPage() {
                 className="btn-primary"
                 onClick={handleAddToCart}
                 disabled={!inStock}
-                style={{ flex: 1, background: inStock ? '#2563eb' : '#eef3f9', color: inStock ? '#fff' : '#667085', borderColor: inStock ? '#2563eb' : '#eef3f9' }}
+                style={{ flex: isMobile ? undefined : 1, width: isMobile ? '100%' : 'auto', minHeight: 44, background: inStock ? '#2563eb' : '#eef3f9', color: inStock ? '#fff' : '#667085', borderColor: inStock ? '#2563eb' : '#eef3f9' }}
               >
                 {addedMsg || 'Add to cart'}
               </button>
             </div>
 
             {/* Buy now */}
-            <button className="btn-secondary" onClick={() => { addToCart(product, qty); navigate('/cart'); }} disabled={!inStock}>
+            <button className="btn-secondary" onClick={() => { addToCart(product, qty); navigate('/cart'); }} disabled={!inStock} style={{ width: isMobile ? '100%' : 'auto', minHeight: 44 }}>
               Buy now
             </button>
 
             <p style={{ fontSize: 11, color: '#667085', margin: 0 }}>Free returns · 2-year warranty · Secure checkout</p>
 
             {/* Wishlist / Compare */}
-            <div style={{ display: 'flex', gap: 12, borderTop: '1px solid #f4f7fb', paddingTop: 16 }}>
+            <div style={{ display: 'flex', gap: 12, borderTop: '1px solid #f4f7fb', paddingTop: 16, flexDirection: isMobile ? 'column' : 'row' }}>
               <button
                 onClick={() => toggleWishlist(product._id || product.id)}
-                style={{ fontSize: 12, color: isWishlisted(product._id || product.id) ? '#2563eb' : '#667085', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                style={{ fontSize: 12, color: isWishlisted(product._id || product.id) ? '#2563eb' : '#667085', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', width: isMobile ? '100%' : 'auto', minHeight: 44 }}
               >
                 ♥ {isWishlisted(product._id || product.id) ? 'Wishlisted' : 'Add to wishlist'}
               </button>
               <button
                 onClick={() => toggleCompare(product._id || product.id)}
-                style={{ fontSize: 12, color: compareList.includes(product._id || product.id) ? '#2563eb' : '#667085', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                style={{ fontSize: 12, color: compareList.includes(product._id || product.id) ? '#2563eb' : '#667085', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', width: isMobile ? '100%' : 'auto', minHeight: 44 }}
               >
                 ⚖ {compareList.includes(product._id || product.id) ? 'Added to compare' : 'Add to compare'}
               </button>
@@ -185,9 +185,9 @@ export default function ProductDetailsPage() {
 
         {/* Highlights / benefits */}
         {product.highlights?.length > 0 && (
-          <div style={{ display: 'flex', gap: 16, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             {product.highlights.map((h, i) => (
-              <div key={i} style={{ flex: 1, background: '#f4f7fb', borderRadius: 16, padding: 18 }}>
+              <div key={i} style={{ flex: 1, background: '#f4f7fb', borderRadius: 16, padding: 18, minWidth: isMobile ? '140px' : 'auto' }}>
                 <p style={{ fontSize: 13, color: '#000', margin: 0 }}>{h}</p>
               </div>
             ))}
@@ -202,17 +202,19 @@ export default function ProductDetailsPage() {
               <h2 style={{ fontSize: 28, fontWeight: 400, color: '#101828', margin: 0 }}>Built beyond the benchmark</h2>
             </div>
             {/* Table */}
-            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #dde4ee', ...(isMobile ? { overflowX: 'auto' } : {}) }}>
-              <div className="table-header">
-                <p style={{ flex: 1, margin: 0 }}>Specification</p>
-                <p style={{ flex: 1, margin: 0 }}>Details</p>
-              </div>
-              {specEntries.map(([key, val]) => (
-                <div key={key} className="table-row">
-                  <p style={{ flex: 1, margin: 0, fontWeight: 500 }}>{key}</p>
-                  <p style={{ flex: 1, margin: 0, color: '#667085' }}>{val}</p>
+            <div style={{ overflowX: 'auto' }}>
+              <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #dde4ee' }}>
+                <div className="table-header">
+                  <p style={{ flex: 1, margin: 0 }}>Specification</p>
+                  <p style={{ flex: 1, margin: 0 }}>Details</p>
                 </div>
-              ))}
+                {specEntries.map(([key, val]) => (
+                  <div key={key} className="table-row">
+                    <p style={{ flex: 1, margin: 0, fontWeight: 500 }}>{key}</p>
+                    <p style={{ flex: 1, margin: 0, color: '#667085' }}>{val}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
