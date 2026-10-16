@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import useResponsive from '../../hooks/useResponsive';
+import { useResponsive } from '../../hooks/useResponsive';
 
 // ── Defined OUTSIDE the component — no re-render, no focus loss ──────────────
-function Field({ label, type = 'text', value, onChange, error, placeholder }) {
+function Field({ label, type = 'text', value, onChange, error, placeholder, isNarrow }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
       <label style={{ fontSize: 12, color: '#101828', fontWeight: 500 }}>{label}</label>
@@ -14,7 +14,7 @@ function Field({ label, type = 'text', value, onChange, error, placeholder }) {
         onChange={onChange}
         placeholder={placeholder}
         className={`input-field${error ? ' error' : ''}`}
-        style={{ width: '100%', minHeight: 44 }}
+        style={{ width: '100%', minHeight: isNarrow ? 48 : 44, height: isNarrow ? 48 : undefined }}
       />
       {error && <p style={{ fontSize: 11, color: '#d92d20', margin: 0 }}>{error}</p>}
     </div>
@@ -65,6 +65,7 @@ export default function SignUpPage() {
   return (
     <div style={{
       display: 'flex',
+      flexDirection: isNarrow ? 'column' : 'row',
       height: '100vh',
       background: '#fff',
       overflow: isNarrow ? 'auto' : 'hidden',
@@ -137,6 +138,7 @@ export default function SignUpPage() {
               onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: '' })); }}
               error={errors.name}
               placeholder="Jordan Lee"
+              isNarrow={isNarrow}
             />
             <Field
               label="Email"
@@ -145,6 +147,7 @@ export default function SignUpPage() {
               onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: '' })); }}
               error={errors.email}
               placeholder="you@example.com"
+              isNarrow={isNarrow}
             />
             <Field
               label="Password"
@@ -153,6 +156,7 @@ export default function SignUpPage() {
               onChange={e => { setPassword(e.target.value); setErrors(p => ({ ...p, password: '' })); }}
               error={errors.password}
               placeholder="At least 8 characters"
+              isNarrow={isNarrow}
             />
             <Field
               label="Confirm Password"
@@ -161,6 +165,7 @@ export default function SignUpPage() {
               onChange={e => { setConfirm(e.target.value); setErrors(p => ({ ...p, confirm: '' })); }}
               error={errors.confirm}
               placeholder="Repeat your password"
+              isNarrow={isNarrow}
             />
 
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
