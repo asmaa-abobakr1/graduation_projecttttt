@@ -73,10 +73,6 @@ export default function HomePage() {
   const featured    = products.slice(0, 4);
   const heroProduct = products[0];
 
-  // ── Section padding helpers ──
-  const sectionPad = isMobile ? '20px 16px' : '32px 20px';
-  const sectionPadMed = isMobile ? '20px 16px' : isTablet ? '32px 20px' : '56px 64px';
-
   return (
     <div style={{ background: '#fff', width: '100%' }}>
 
@@ -87,7 +83,7 @@ export default function HomePage() {
         flexDirection: isMobile ? 'column' : 'row',
         gap: isMobile ? 24 : 52,
         alignItems: isMobile ? 'flex-start' : 'stretch',
-        padding: isMobile ? '32px 20px' : isTablet ? '40px 32px' : '52px 64px',
+        padding: isMobile ? '24px 16px' : isTablet ? '32px 24px' : '52px 64px',
         minHeight: isMobile ? 'auto' : 570,
         overflow: 'hidden',
       }}>
@@ -102,22 +98,40 @@ export default function HomePage() {
           <p style={{ fontSize: 12, fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
             THE 2026 FLAGSHIP EDIT
           </p>
-          <h1 style={{ fontSize: isMobile ? '32px' : isTablet ? '40px' : '54px', fontWeight: 400, color: '#101828', lineHeight: 1.02, margin: 0 }}>
+          <h1 style={{ fontSize: isMobile ? '32px' : '54px', fontWeight: 400, color: '#101828', lineHeight: 1.02, margin: 0 }}>
             Future-ready devices. Curated for real life.
           </h1>
           <p style={{ fontSize: 17, color: '#667085', lineHeight: 1.55, margin: 0 }}>
             Meet the latest phones, laptops and audio — expertly selected, responsibly delivered, and supported for the long run.
           </p>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <button className="btn-primary" onClick={() => navigate('/search')}>Shop new releases</button>
-            <button className="btn-secondary" onClick={() => navigate('/search')}>Explore buying guides</button>
+          {/* CTA buttons: stacked on mobile, inline on desktop */}
+          <div style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: 12,
+            width: isMobile ? '100%' : 'auto',
+          }}>
+            <button
+              className="btn-primary"
+              style={{ width: isMobile ? '100%' : 'auto', minHeight: 44 }}
+              onClick={() => navigate('/search')}
+            >
+              Shop new releases
+            </button>
+            <button
+              className="btn-secondary"
+              style={{ width: isMobile ? '100%' : 'auto', minHeight: 44 }}
+              onClick={() => navigate('/search')}
+            >
+              Explore buying guides
+            </button>
           </div>
           <p style={{ fontSize: 12, color: '#667085', margin: 0 }}>
             Free 2-day delivery · 30-day returns · Expert support
           </p>
         </div>
 
-        {/* Hero image: hidden on mobile, shown on tablet+ */}
+        {/* Hero image: on desktop/tablet shown beside copy; on mobile shown below copy */}
         {!isMobile && (
           <div style={{ flex: 1, borderRadius: 24, overflow: 'hidden', background: 'linear-gradient(135deg,#dde4ee,#c8d8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: isTablet ? 280 : 400 }}>
             {(heroImg || heroProduct?.image) ? (
@@ -135,7 +149,7 @@ export default function HomePage() {
 
         {/* On mobile: show hero image below copy at reduced size */}
         {isMobile && (
-          <div style={{ width: '100%', borderRadius: 16, overflow: 'hidden', background: 'linear-gradient(135deg,#dde4ee,#c8d8f0)', height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '100%', borderRadius: 16, overflow: 'hidden', background: 'linear-gradient(135deg,#dde4ee,#c8d8f0)', height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {(heroImg || heroProduct?.image) ? (
               <img src={heroImg || heroProduct.image} alt="Hero"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -152,19 +166,19 @@ export default function HomePage() {
 
       {/* ── Category shortcuts ── */}
       <section style={{
-        padding: isMobile ? '20px 16px' : isTablet ? '24px 32px' : '30px 64px',
-        display: isMobile || isTablet ? 'grid' : 'flex',
-        gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? 'repeat(3, 1fr)' : undefined,
-        gap: isMobile ? 12 : 16,
-        flexWrap: (!isMobile && !isTablet) ? 'wrap' : undefined,
-        justifyContent: (!isMobile && !isTablet) ? 'space-between' : undefined,
+        padding: isMobile ? '24px 16px' : isTablet ? '32px 24px' : '30px 64px',
+        display: isMobile ? 'grid' : 'flex',
+        gridTemplateColumns: isMobile ? '1fr 1fr' : undefined,
+        gap: isMobile ? 10 : 16,
+        flexWrap: !isMobile ? 'wrap' : undefined,
+        justifyContent: !isMobile ? 'space-between' : undefined,
       }}>
         {CATEGORIES.map(cat => (
           <Link key={cat.name} to={cat.path} style={{
             textDecoration: 'none',
             background: '#f4f7fb',
-            width: isMobile || isTablet ? 'auto' : 190,
-            height: 84,
+            width: isMobile ? 'auto' : 190,
+            minHeight: 84,
             padding: 16,
             borderRadius: 16,
             display: 'flex',
@@ -179,7 +193,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Featured products ── */}
-      <section style={{ padding: isMobile ? '20px 16px' : isTablet ? '32px 20px' : '56px 64px' }}>
+      <section style={{ padding: isMobile ? '24px 16px' : isTablet ? '32px 24px' : '56px 64px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 8 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <p className="section-label" style={{ margin: 0 }}>Editor's picks</p>
@@ -190,8 +204,8 @@ export default function HomePage() {
         {featured.length > 0 ? (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)',
-            gap: isMobile ? 16 : 22,
+            gridTemplateColumns: isMobile ? '1fr 1fr' : isTablet ? '1fr 1fr 1fr' : 'repeat(4, 1fr)',
+            gap: isMobile ? 16 : 24,
           }}>
             {featured.map(p => <ProductCard key={p._id || p.id} product={p} />)}
           </div>
@@ -204,21 +218,29 @@ export default function HomePage() {
 
       {/* ── Editorial promotion ── */}
       <section style={{
-        padding: isMobile ? '20px 16px' : isTablet ? '32px 20px' : '48px 64px',
+        padding: isMobile ? '24px 16px' : isTablet ? '32px 24px' : '48px 64px',
         background: '#f4f7fb',
         display: 'flex',
         flexDirection: isMobile ? 'column' : 'row',
         gap: isMobile ? 20 : 40,
         alignItems: isMobile ? 'flex-start' : 'center',
       }}>
-        {/* Hide image on mobile to save space, show on tablet+ */}
-        {!isMobile && (
-          <div style={{ flex: 1, borderRadius: 24, overflow: 'hidden', background: 'linear-gradient(135deg,#dde4ee,#c8d8f0)', height: 320, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {products[1]?.image
-              ? <img src={products[1].image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <span style={{ fontSize: 40, color: '#98a2b3' }}>📱</span>}
-          </div>
-        )}
+        {/* Image: show above copy on mobile, beside copy on tablet/desktop */}
+        <div style={{
+          flex: isMobile ? undefined : 1,
+          width: isMobile ? '100%' : undefined,
+          borderRadius: isMobile ? 16 : 24,
+          overflow: 'hidden',
+          background: 'linear-gradient(135deg,#dde4ee,#c8d8f0)',
+          height: isMobile ? 160 : 320,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          {products[1]?.image
+            ? <img src={products[1].image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <span style={{ fontSize: isMobile ? 32 : 40, color: '#98a2b3' }}>📱</span>}
+        </div>
         <div style={{ width: isMobile ? '100%' : isTablet ? '100%' : 440, display: 'flex', flexDirection: 'column', gap: 18 }}>
           <p className="section-label" style={{ margin: 0 }}>Expert picks</p>
           <h2 style={{ fontSize: isMobile ? 22 : 32, fontWeight: 400, color: '#101828', margin: 0, lineHeight: 1.2 }}>
@@ -227,7 +249,7 @@ export default function HomePage() {
           <p style={{ fontSize: 15, color: '#667085', margin: 0, lineHeight: 1.6 }}>
             Every device on our platform is tested, reviewed and curated by technology specialists. No filler — only the gear worth your money.
           </p>
-          <button className="btn-primary" style={{ width: 'fit-content' }} onClick={() => navigate('/search')}>
+          <button className="btn-primary" style={{ width: 'fit-content', minHeight: 44 }} onClick={() => navigate('/search')}>
             Browse the edit →
           </button>
         </div>
@@ -235,13 +257,13 @@ export default function HomePage() {
 
       {/* ── Value props ── */}
       <section style={{
-        padding: isMobile ? '20px 16px' : isTablet ? '32px 20px' : '40px 64px',
-        display: isMobile ? 'grid' : 'flex',
-        gridTemplateColumns: isMobile ? '1fr 1fr' : undefined,
+        padding: isMobile ? '24px 16px' : isTablet ? '32px 24px' : '40px 64px',
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
         gap: isMobile ? 12 : 24,
       }}>
         {VALUE_PROPS.map(v => (
-          <div key={v.title} style={{ flex: isMobile ? undefined : 1, background: '#f4f7fb', borderRadius: 16, padding: 18, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div key={v.title} style={{ background: '#f4f7fb', borderRadius: 16, padding: 18, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <p style={{ fontSize: 14, fontWeight: 700, color: '#101828', margin: 0 }}>{v.title}</p>
             <p style={{ fontSize: 12, color: '#667085', margin: 0 }}>{v.desc}</p>
           </div>
@@ -250,7 +272,7 @@ export default function HomePage() {
 
       {/* ── Newsletter ── */}
       <section style={{
-        padding: isMobile ? '20px 16px' : isTablet ? '32px 20px' : '56px 64px',
+        padding: isMobile ? '32px 16px' : isTablet ? '32px 24px' : '48px 64px',
         background: '#f4f7fb',
         textAlign: 'center',
       }}>
@@ -262,11 +284,20 @@ export default function HomePage() {
           {subscribed ? (
             <p style={{ fontSize: 14, color: '#078a55', fontWeight: 600 }}>You're subscribed! ✓</p>
           ) : (
-            <div style={{ display: 'flex', gap: 10, width: '100%', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-                placeholder="your@email.com" className="input-field" style={{ flex: 1, minWidth: isMobile ? '100%' : 0 }} />
-              <button className="btn-primary" style={{ flexShrink: 0, width: isMobile ? '100%' : 'auto' }}
-                onClick={() => { if (email.includes('@')) setSubscribed(true); }}>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 10, width: '100%' }}>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="input-field"
+                style={{ flex: 1, width: isMobile ? '100%' : undefined, minHeight: 44 }}
+              />
+              <button
+                className="btn-primary"
+                style={{ flexShrink: 0, width: isMobile ? '100%' : 'auto', minHeight: 44 }}
+                onClick={() => { if (email.includes('@')) setSubscribed(true); }}
+              >
                 Subscribe
               </button>
             </div>
