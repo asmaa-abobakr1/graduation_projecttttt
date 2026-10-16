@@ -15,7 +15,7 @@ function SummaryLine({ label, value, bold, large, green, red }) {
 }
 
 export default function CartPage() {
-  const { isMobile } = useResponsive();
+  const { isMobile, isTablet } = useResponsive();
   const {
     items, removeFromCart, updateQuantity, clearCart,
     subtotal, discount, tax, shipping, total, itemCount,
@@ -112,7 +112,7 @@ export default function CartPage() {
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 36, fontWeight: 400, color: '#101828', margin: '0 0 6px' }}>Your checkout</h1>
+        <h1 style={{ fontSize: isMobile ? '26px' : '36px', fontWeight: 400, color: '#101828', margin: '0 0 6px' }}>Your checkout</h1>
         <p style={{ fontSize: 13, color: '#667085', margin: 0 }}>
           {itemCount} item{itemCount !== 1 ? 's' : ''} · Estimated delivery within 3–5 business days
         </p>
@@ -133,9 +133,9 @@ export default function CartPage() {
             {items.map((item, idx) => {
               const iid = item._id || item.id;
               return (
-                <div key={iid} style={{ display: 'flex', gap: 16, paddingBottom: idx < items.length - 1 ? 20 : 0, marginBottom: idx < items.length - 1 ? 20 : 0, borderBottom: idx < items.length - 1 ? '1px solid #f4f7fb' : 'none' }}>
+                <div key={iid} style={{ display: 'flex', gap: isMobile ? 10 : 16, paddingBottom: idx < items.length - 1 ? (isMobile ? 14 : 20) : 0, marginBottom: idx < items.length - 1 ? (isMobile ? 14 : 20) : 0, borderBottom: idx < items.length - 1 ? '1px solid #f4f7fb' : 'none' }}>
                   {/* Image */}
-                  <div style={{ width: 110, height: 96, borderRadius: 10, overflow: 'hidden', background: '#f4f7fb', flexShrink: 0 }}>
+                  <div style={{ width: isMobile ? 80 : 110, height: isMobile ? 70 : 96, borderRadius: 10, overflow: 'hidden', background: '#f4f7fb', flexShrink: 0 }}>
                     <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={e => { e.currentTarget.style.display = 'none'; }} />
                   </div>
@@ -191,12 +191,12 @@ export default function CartPage() {
             <p style={{ fontSize: 16, fontWeight: 700, color: '#101828', margin: '0 0 20px' }}>Contact & Shipping</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ display: 'flex', gap: 14 }}>
-                <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 14 }}>
+                <div style={{ flex: 1, width: isMobile ? '100%' : undefined }}>
                   <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>First name</label>
                   <input name="firstName" value={form.firstName} onChange={handleFormChange} className="input-field" placeholder="Jordan" />
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, width: isMobile ? '100%' : undefined }}>
                   <label style={{ fontSize: 12, color: '#101828', display: 'block', marginBottom: 7 }}>Last name</label>
                   <input name="lastName" value={form.lastName} onChange={handleFormChange} className="input-field" placeholder="Smith" />
                 </div>
@@ -240,7 +240,7 @@ export default function CartPage() {
                 { value: 'standard', label: 'Standard', sub: '5-7 business days', price: 'Free' },
                 { value: 'express',  label: 'Express',  sub: '1-2 business days', price: '$15.00' },
               ].map(opt => (
-                <label key={opt.value} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, padding: 16, border: `1px solid ${form.deliveryMethod === opt.value ? '#2563eb' : '#dde4ee'}`, borderRadius: 10, cursor: 'pointer', background: form.deliveryMethod === opt.value ? '#f4f9ff' : '#fff' }}>
+                <label key={opt.value} style={{ flex: 1, width: isMobile ? '100%' : 'auto', display: 'flex', alignItems: 'center', gap: 12, padding: 16, border: `1px solid ${form.deliveryMethod === opt.value ? '#2563eb' : '#dde4ee'}`, borderRadius: 10, cursor: 'pointer', background: form.deliveryMethod === opt.value ? '#f4f9ff' : '#fff', minHeight: 44 }}>
                   <input type="radio" name="deliveryMethod" value={opt.value} checked={form.deliveryMethod === opt.value} onChange={handleFormChange}
                     style={{ accentColor: '#2563eb' }} />
                   <div>
