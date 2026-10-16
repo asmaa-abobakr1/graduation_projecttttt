@@ -304,7 +304,7 @@ export default function SearchPage() {
         {/* ── Filters sidebar: mobile overlay ── */}
         {isMobile && filtersOpen && (
           <div
-            style={{ position: 'fixed', top: 0, left: 0, width: '280px', height: '100vh', zIndex: 9999, overflowY: 'auto', background: '#fff', padding: 20, boxShadow: '4px 0 24px rgba(0,0,0,0.12)' }}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200, backgroundColor: 'white', overflowY: 'auto', padding: '20px' }}
           >
             {sidebarContent}
           </div>
@@ -402,7 +402,7 @@ export default function SearchPage() {
           )}
           {/* Sort bar */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-            <p style={{ fontSize: isMobile ? 12 : 13, color: '#667085', margin: 0 }}>{filteredProducts.length} products</p>
+            {!isMobile && <p style={{ fontSize: 13, color: '#667085', margin: 0 }}>{filteredProducts.length} products</p>}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <label style={{ fontSize: 13, color: '#667085' }}>Sort by:</label>
               <select value={sortBy} onChange={e => setSortBy(e.target.value)}
