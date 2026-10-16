@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useProducts } from '../../context/ProductContext';
 import { useCart } from '../../context/CartContext';
 import { productsAPI } from '../../services/api';
+import { useResponsive } from '../../hooks/useResponsive';
 
 function StarRating({ rating = 5, reviews = 0 }) {
   const full = Math.round(rating);
@@ -19,6 +20,7 @@ export default function ProductDetailsPage() {
   const { getProduct, toggleWishlist, isWishlisted, toggleCompare, compareList } = useProducts();
   const { addToCart }    = useCart();
   const navigate         = useNavigate();
+  const { isMobile }     = useResponsive();
 
   const [product, setProduct]         = useState(getProduct(id));
   const [loading, setLoading]         = useState(!product);
@@ -60,7 +62,7 @@ export default function ProductDetailsPage() {
 
   return (
     <div style={{ background: '#fff' }}>
-      <div style={{ maxWidth: 1440, margin: '0 auto', padding: '32px 64px', display: 'flex', flexDirection: 'column', gap: 48 }}>
+      <div style={{ maxWidth: 1440, margin: '0 auto', padding: isMobile ? '16px 12px' : '32px 64px', display: 'flex', flexDirection: 'column', gap: 48 }}>
 
         {/* Breadcrumb */}
         <p style={{ fontSize: 11, color: '#667085', margin: 0 }}>
@@ -70,21 +72,25 @@ export default function ProductDetailsPage() {
         </p>
 
         {/* Product overview */}
-        <div style={{ display: 'flex', gap: 48, alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', gap: 48, alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row' }}>
 
           {/* Gallery */}
-          <div style={{ width: 700, display: 'flex', gap: 14, flexShrink: 0 }}>
+          <div style={{ width: isMobile ? '100%' : 700, display: 'flex', gap: 14, flexShrink: 0, flexDirection: isMobile ? 'column-reverse' : 'row' }}>
             {/* Thumbnails */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
+            <div style={
+              isMobile
+                ? { display: 'flex', flexDirection: 'row', overflowX: 'auto', gap: 8 }
+                : { display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }
+            }>
               {images.map((img, i) => (
                 <div key={i} onClick={() => setActiveImg(i)}
-                  style={{ width: 90, height: 90, borderRadius: 10, overflow: 'hidden', cursor: 'pointer', flexShrink: 0, border: `2px solid ${i === activeImg ? '#2563eb' : '#dde4ee'}`, transition: 'border-color 0.15s' }}>
+                  style={{ width: isMobile ? 64 : 90, height: isMobile ? 64 : 90, borderRadius: 10, overflow: 'hidden', cursor: 'pointer', flexShrink: 0, border: `2px solid ${i === activeImg ? '#2563eb' : '#dde4ee'}`, transition: 'border-color 0.15s' }}>
                   <img src={img} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ))}
             </div>
             {/* Main image */}
-            <div style={{ flex: 1, height: 610, borderRadius: 24, overflow: 'hidden', background: '#f4f7fb' }}>
+            <div style={{ flex: 1, height: isMobile ? 280 : 610, borderRadius: 24, overflow: 'hidden', background: '#f4f7fb' }}>
               <img
                 src={images[activeImg] || product.image}
                 alt={product.name}
@@ -95,7 +101,7 @@ export default function ProductDetailsPage() {
           </div>
 
           {/* Purchase panel */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 18, minWidth: 0 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 18, minWidth: 0, width: isMobile ? '100%' : 'auto' }}>
 
             <span className="badge badge-blue">
               {product.tags?.includes('New') || product.tags?.includes('New release') ? 'New release' : product.category}
@@ -179,7 +185,7 @@ export default function ProductDetailsPage() {
 
         {/* Highlights / benefits */}
         {product.highlights?.length > 0 && (
-          <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ display: 'flex', gap: 16, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
             {product.highlights.map((h, i) => (
               <div key={i} style={{ flex: 1, background: '#f4f7fb', borderRadius: 16, padding: 18 }}>
                 <p style={{ fontSize: 13, color: '#000', margin: 0 }}>{h}</p>
@@ -196,7 +202,7 @@ export default function ProductDetailsPage() {
               <h2 style={{ fontSize: 28, fontWeight: 400, color: '#101828', margin: 0 }}>Built beyond the benchmark</h2>
             </div>
             {/* Table */}
-            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #dde4ee' }}>
+            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #dde4ee', ...(isMobile ? { overflowX: 'auto' } : {}) }}>
               <div className="table-header">
                 <p style={{ flex: 1, margin: 0 }}>Specification</p>
                 <p style={{ flex: 1, margin: 0 }}>Details</p>
@@ -221,7 +227,7 @@ export default function ProductDetailsPage() {
 
         {/* Pros / Cons */}
         {(product.pros?.length > 0 || product.cons?.length > 0) && (
-          <div style={{ display: 'flex', gap: 24 }}>
+          <div style={{ display: 'flex', gap: 24, flexDirection: isMobile ? 'column' : 'row' }}>
             {product.pros?.length > 0 && (
               <div style={{ flex: 1, background: '#e8f8f1', borderRadius: 16, padding: 20 }}>
                 <p style={{ fontSize: 13, fontWeight: 700, color: '#078a55', margin: '0 0 12px' }}>Pros</p>

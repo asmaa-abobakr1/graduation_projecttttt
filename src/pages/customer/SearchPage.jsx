@@ -4,6 +4,7 @@ import { Search, X } from 'lucide-react';
 import { useProducts } from '../../context/ProductContext';
 import { useCart } from '../../context/CartContext';
 import { categoriesAPI } from '../../services/api';
+import { useResponsive } from '../../hooks/useResponsive';
 
 const SORT_OPTIONS = [
   { value: 'featured',   label: 'Featured' },
@@ -86,8 +87,10 @@ function ProductCard({ product }) {
 }
 
 export default function SearchPage() {
+  const { isMobile, isTablet } = useResponsive();
   const { products, wishlist } = useProducts();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const urlCategory = searchParams.get('category') || 'All';
   const urlTag      = searchParams.get('tag')      || '';
@@ -182,18 +185,110 @@ export default function SearchPage() {
     : selectedTag ? selectedTag
     : 'All products';
 
+  const gridCols = isMobile
+    ? 'repeat(2, 1fr)'
+    : isTablet
+    ? 'repeat(3, 1fr)'
+    : 'repeat(4, 1fr)';
+
+  const pagePadding = isMobile ? '16px' : '32px 64px';
+  const headerPadding = isMobile ? '16px' : '24px 64px';
+
+  const sidebarContent = (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <p style={{ fontSize: 16, fontWeight: 700, color: '#101828', margin: 0 }}>Filters</p>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {(selectedCategory !== 'All' || selectedBrands.length || selectedTag || query || inStockOnly || showWishlistOnly || minPrice > 0 || maxPrice < 3500) && (
+            <button onClick={clearAllFilters} style={{ fontSize: 12, color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Clear all</button>
+          )}
+          {isMobile && (
+            <button onClick={() => setFiltersOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#667085', lineHeight: 1, fontFamily: 'inherit' }}>✕</button>
+          )}
+        </div>
+      </div>
+
+      {/* Category */}
+      <div style={{ marginBottom: 24 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: '#101828', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Category</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {[{ id: 'All', name: 'All' }, ...categoriesList].map(cat => (
+            <button key={cat.id || cat.name} onClick={() => { setSelectedCategory(cat.name); if (isMobile) setFiltersOpen(false); }}
+              style={{ textAlign: 'left', padding: '7px 10px', borderRadius: 8, border: 'none', background: selectedCategory === cat.name ? '#e8f0ff' : 'transparent', color: selectedCategory === cat.name ? '#2563eb' : '#667085', fontSize: 13, fontWeight: selectedCategory === cat.name ? 600 : 400, cursor: 'pointer', fontFamily: 'inherit' }}>
+              {cat.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Brands */}
+      {allBrands.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: '#101828', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Brand</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {allBrands.map(brand => (
+              <label key={brand} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#667085' }}>
+                <input type="checkbox" checked={selectedBrands.includes(brand)} onChange={() => toggleBrand(brand)}
+                  style={{ width: 14, height: 14, accentColor: '#2563eb' }} />
+                {brand}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Price range */}
+      <div style={{ marginBottom: 24 }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: '#101828', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Price range</p>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <input type="number" value={minPrice} onChange={e => setMinPrice(Number(e.target.value))} min={0} max={maxPrice}
+            style={{ width: '100%', height: 36, border: '1px solid #dde4ee', borderRadius: 8, padding: '0 8px', fontSize: 12, fontFamily: 'inherit', outline: 'none' }} placeholder="Min" />
+          <input type="number" value={maxPrice} onChange={e => setMaxPrice(Number(e.target.value))} min={minPrice} max={5000}
+            style={{ width: '100%', height: 36, border: '1px solid #dde4ee', borderRadius: 8, padding: '0 8px', fontSize: 12, fontFamily: 'inherit', outline: 'none' }} placeholder="Max" />
+        </div>
+        <input type="range" min={0} max={5000} value={maxPrice} onChange={e => setMaxPrice(Number(e.target.value))} />
+        <p style={{ fontSize: 11, color: '#667085', margin: '4px 0 0' }}>${minPrice} – ${maxPrice}</p>
+      </div>
+
+      {/* Rating */}
+      <div style={{ marginBottom: 24 }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: '#101828', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Min rating</p>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {[0, 3, 4, 4.5].map(r => (
+            <button key={r} onClick={() => setMinRating(r)}
+              style={{ padding: '4px 10px', borderRadius: 999, border: `1px solid ${minRating === r ? '#2563eb' : '#dde4ee'}`, background: minRating === r ? '#e8f0ff' : '#fff', color: minRating === r ? '#2563eb' : '#667085', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>
+              {r === 0 ? 'Any' : `${r}★+`}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* In stock */}
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#667085', marginBottom: 12 }}>
+        <input type="checkbox" checked={inStockOnly} onChange={e => setInStockOnly(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#2563eb' }} />
+        In stock only
+      </label>
+
+      {/* Wishlist */}
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#667085' }}>
+        <input type="checkbox" checked={showWishlistOnly} onChange={e => setShowWishlistOnly(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#2563eb' }} />
+        Wishlist only
+      </label>
+    </div>
+  );
+
   return (
     <div style={{ background: '#fff', minHeight: '100vh' }}>
 
       {/* ── Page header ── */}
-      <div style={{ borderBottom: '1px solid #dde4ee', padding: '24px 64px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+      <div style={{ borderBottom: '1px solid #dde4ee', padding: headerPadding }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <h1 style={{ fontSize: 24, fontWeight: 700, color: '#101828', margin: 0 }}>{pageTitle}</h1>
-            <span className="badge badge-gray">{filteredProducts.length} results</span>
+            {!isMobile && <span className="badge badge-gray">{filteredProducts.length} results</span>}
           </div>
           {/* Search bar */}
-          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 0, flex: 1, maxWidth: 480 }}>
+          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 0, flex: 1, maxWidth: isMobile ? '100%' : 480, minWidth: isMobile ? '100%' : 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f4f7fb', borderRadius: 10, padding: '0 14px', height: 42, flex: 1, border: '1px solid #dde4ee' }}>
               <Search size={16} color="#98a2b3" />
               <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search devices, brands and specs…"
@@ -204,90 +299,110 @@ export default function SearchPage() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', padding: '32px 64px', gap: 32 }}>
+      <div style={{ display: 'flex', padding: pagePadding, gap: isMobile ? 0 : 32 }}>
 
-        {/* ── Filters sidebar ── */}
-        <aside style={{ width: 240, flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-            <p style={{ fontSize: 16, fontWeight: 700, color: '#101828', margin: 0 }}>Filters</p>
-            {(selectedCategory !== 'All' || selectedBrands.length || selectedTag || query || inStockOnly || showWishlistOnly || minPrice > 0 || maxPrice < 3500) && (
-              <button onClick={clearAllFilters} style={{ fontSize: 12, color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Clear all</button>
-            )}
+        {/* ── Filters sidebar: mobile overlay ── */}
+        {isMobile && filtersOpen && (
+          <div
+            style={{ position: 'fixed', top: 0, left: 0, width: '280px', height: '100vh', zIndex: 9999, overflowY: 'auto', background: '#fff', padding: 20, boxShadow: '4px 0 24px rgba(0,0,0,0.12)' }}
+          >
+            {sidebarContent}
           </div>
+        )}
 
-          {/* Category */}
-          <div style={{ marginBottom: 24 }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#101828', margin: '0 0 10px', textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.06em' }}>Category</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {[{ id: 'All', name: 'All' }, ...categoriesList].map(cat => (
-                <button key={cat.id || cat.name} onClick={() => setSelectedCategory(cat.name)}
-                  style={{ textAlign: 'left', padding: '7px 10px', borderRadius: 8, border: 'none', background: selectedCategory === cat.name ? '#e8f0ff' : 'transparent', color: selectedCategory === cat.name ? '#2563eb' : '#667085', fontSize: 13, fontWeight: selectedCategory === cat.name ? 600 : 400, cursor: 'pointer', fontFamily: 'inherit' }}>
-                  {cat.name}
-                </button>
-              ))}
+        {/* ── Filters sidebar: desktop/tablet ── */}
+        {!isMobile && (
+          <aside style={{ width: 240, flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <p style={{ fontSize: 16, fontWeight: 700, color: '#101828', margin: 0 }}>Filters</p>
+              {(selectedCategory !== 'All' || selectedBrands.length || selectedTag || query || inStockOnly || showWishlistOnly || minPrice > 0 || maxPrice < 3500) && (
+                <button onClick={clearAllFilters} style={{ fontSize: 12, color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Clear all</button>
+              )}
             </div>
-          </div>
 
-          {/* Brands */}
-          {allBrands.length > 0 && (
+            {/* Category */}
             <div style={{ marginBottom: 24 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#101828', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Brand</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {allBrands.map(brand => (
-                  <label key={brand} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#667085' }}>
-                    <input type="checkbox" checked={selectedBrands.includes(brand)} onChange={() => toggleBrand(brand)}
-                      style={{ width: 14, height: 14, accentColor: '#2563eb' }} />
-                    {brand}
-                  </label>
+              <p style={{ fontSize: 12, fontWeight: 700, color: '#101828', margin: '0 0 10px', textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.06em' }}>Category</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {[{ id: 'All', name: 'All' }, ...categoriesList].map(cat => (
+                  <button key={cat.id || cat.name} onClick={() => setSelectedCategory(cat.name)}
+                    style={{ textAlign: 'left', padding: '7px 10px', borderRadius: 8, border: 'none', background: selectedCategory === cat.name ? '#e8f0ff' : 'transparent', color: selectedCategory === cat.name ? '#2563eb' : '#667085', fontSize: 13, fontWeight: selectedCategory === cat.name ? 600 : 400, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    {cat.name}
+                  </button>
                 ))}
               </div>
             </div>
-          )}
 
-          {/* Price range */}
-          <div style={{ marginBottom: 24 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#101828', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Price range</p>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-              <input type="number" value={minPrice} onChange={e => setMinPrice(Number(e.target.value))} min={0} max={maxPrice}
-                style={{ width: '100%', height: 36, border: '1px solid #dde4ee', borderRadius: 8, padding: '0 8px', fontSize: 12, fontFamily: 'inherit', outline: 'none' }} placeholder="Min" />
-              <input type="number" value={maxPrice} onChange={e => setMaxPrice(Number(e.target.value))} min={minPrice} max={5000}
-                style={{ width: '100%', height: 36, border: '1px solid #dde4ee', borderRadius: 8, padding: '0 8px', fontSize: 12, fontFamily: 'inherit', outline: 'none' }} placeholder="Max" />
+            {/* Brands */}
+            {allBrands.length > 0 && (
+              <div style={{ marginBottom: 24 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#101828', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Brand</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {allBrands.map(brand => (
+                    <label key={brand} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#667085' }}>
+                      <input type="checkbox" checked={selectedBrands.includes(brand)} onChange={() => toggleBrand(brand)}
+                        style={{ width: 14, height: 14, accentColor: '#2563eb' }} />
+                      {brand}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Price range */}
+            <div style={{ marginBottom: 24 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#101828', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Price range</p>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <input type="number" value={minPrice} onChange={e => setMinPrice(Number(e.target.value))} min={0} max={maxPrice}
+                  style={{ width: '100%', height: 36, border: '1px solid #dde4ee', borderRadius: 8, padding: '0 8px', fontSize: 12, fontFamily: 'inherit', outline: 'none' }} placeholder="Min" />
+                <input type="number" value={maxPrice} onChange={e => setMaxPrice(Number(e.target.value))} min={minPrice} max={5000}
+                  style={{ width: '100%', height: 36, border: '1px solid #dde4ee', borderRadius: 8, padding: '0 8px', fontSize: 12, fontFamily: 'inherit', outline: 'none' }} placeholder="Max" />
+              </div>
+              <input type="range" min={0} max={5000} value={maxPrice} onChange={e => setMaxPrice(Number(e.target.value))} />
+              <p style={{ fontSize: 11, color: '#667085', margin: '4px 0 0' }}>${minPrice} – ${maxPrice}</p>
             </div>
-            <input type="range" min={0} max={5000} value={maxPrice} onChange={e => setMaxPrice(Number(e.target.value))} />
-            <p style={{ fontSize: 11, color: '#667085', margin: '4px 0 0' }}>${minPrice} – ${maxPrice}</p>
-          </div>
 
-          {/* Rating */}
-          <div style={{ marginBottom: 24 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#101828', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Min rating</p>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {[0, 3, 4, 4.5].map(r => (
-                <button key={r} onClick={() => setMinRating(r)}
-                  style={{ padding: '4px 10px', borderRadius: 999, border: `1px solid ${minRating === r ? '#2563eb' : '#dde4ee'}`, background: minRating === r ? '#e8f0ff' : '#fff', color: minRating === r ? '#2563eb' : '#667085', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>
-                  {r === 0 ? 'Any' : `${r}★+`}
-                </button>
-              ))}
+            {/* Rating */}
+            <div style={{ marginBottom: 24 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#101828', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Min rating</p>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {[0, 3, 4, 4.5].map(r => (
+                  <button key={r} onClick={() => setMinRating(r)}
+                    style={{ padding: '4px 10px', borderRadius: 999, border: `1px solid ${minRating === r ? '#2563eb' : '#dde4ee'}`, background: minRating === r ? '#e8f0ff' : '#fff', color: minRating === r ? '#2563eb' : '#667085', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    {r === 0 ? 'Any' : `${r}★+`}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* In stock */}
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#667085', marginBottom: 12 }}>
-            <input type="checkbox" checked={inStockOnly} onChange={e => setInStockOnly(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#2563eb' }} />
-            In stock only
-          </label>
+            {/* In stock */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#667085', marginBottom: 12 }}>
+              <input type="checkbox" checked={inStockOnly} onChange={e => setInStockOnly(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#2563eb' }} />
+              In stock only
+            </label>
 
-          {/* Wishlist */}
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#667085' }}>
-            <input type="checkbox" checked={showWishlistOnly} onChange={e => setShowWishlistOnly(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#2563eb' }} />
-            Wishlist only
-          </label>
-        </aside>
+            {/* Wishlist */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#667085' }}>
+              <input type="checkbox" checked={showWishlistOnly} onChange={e => setShowWishlistOnly(e.target.checked)} style={{ width: 14, height: 14, accentColor: '#2563eb' }} />
+              Wishlist only
+            </label>
+          </aside>
+        )}
 
         {/* ── Product grid ── */}
         <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Mobile: Filters toggle button */}
+          {isMobile && (
+            <button
+              onClick={() => setFiltersOpen(true)}
+              style={{ width: '100%', minHeight: 44, marginBottom: 16, background: '#f4f7fb', border: '1px solid #dde4ee', borderRadius: 10, fontSize: 14, fontWeight: 600, color: '#101828', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              ☰ Filters
+            </button>
+          )}
           {/* Sort bar */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-            <p style={{ fontSize: 13, color: '#667085', margin: 0 }}>{filteredProducts.length} products</p>
+            <p style={{ fontSize: isMobile ? 12 : 13, color: '#667085', margin: 0 }}>{filteredProducts.length} products</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <label style={{ fontSize: 13, color: '#667085' }}>Sort by:</label>
               <select value={sortBy} onChange={e => setSortBy(e.target.value)}
@@ -299,7 +414,7 @@ export default function SearchPage() {
 
           {/* Grid */}
           {filteredProducts.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 12 : 24 }}>
               {filteredProducts.map(p => <ProductCard key={p._id || p.id} product={p} />)}
             </div>
           ) : (
