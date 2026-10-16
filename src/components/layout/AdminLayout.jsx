@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import { useAuth } from '../../context/AuthContext';
 import { Bell } from 'lucide-react';
+import { useResponsive } from '../../hooks/useResponsive';
 
 const PAGE_TITLES = {
   '/admin':            { title: 'Admin Main Dashboard',      sub: 'Live commerce overview' },
@@ -18,6 +19,7 @@ const PAGE_TITLES = {
 export default function AdminLayout() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { user } = useAuth();
+  const { isMobile } = useResponsive();
   const location = useLocation();
   const page = PAGE_TITLES[location.pathname] || { title: 'Admin', sub: '' };
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -44,7 +46,7 @@ export default function AdminLayout() {
               ☰
             </button>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <p style={{ fontSize: 20, fontWeight: 700, color: '#101828', margin: 0 }}>{page.title}</p>
+              <p style={{ fontSize: 20, fontWeight: 700, color: '#101828', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isMobile ? '150px' : 'none' }}>{page.title}</p>
               <p style={{ fontSize: 12, color: '#667085', margin: 0 }}>{today} · {page.sub}</p>
             </div>
           </div>
@@ -60,7 +62,7 @@ export default function AdminLayout() {
               <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#2563eb', color: '#fff', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {user?.name?.charAt(0) || 'A'}
               </div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#101828' }}>{user?.name || 'Admin'}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#101828' }}>{!isMobile && (user?.name || 'Admin')}</span>
             </div>
           </div>
         </div>

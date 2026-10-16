@@ -417,6 +417,7 @@
   /* Two-column layout stacks */
   .adm-two-col {
     flex-direction: column;
+    grid-template-columns: 1fr !important;
   }
   .adm-two-col-main,
   .adm-two-col-side {
@@ -487,6 +488,11 @@
   .adm-btn,
   button {
     min-height: 44px;
+  }
+
+  /* Image upload preview: reduce height on mobile */
+  .adm-image-preview {
+    height: 160px !important;
   }
 }
 
