@@ -36,6 +36,19 @@ const userSchema = new mongoose.Schema(
     wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
     // Compare list: array of product IDs
     compareList: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+    // Cart items — server-side cart
+    cart: [
+      {
+        product:  { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+        quantity: { type: Number, required: true, min: 1, default: 1 },
+        price:    { type: Number, required: true }, // snapshot at time of adding
+      },
+    ],
+    // Store settings (admin-only)
+    storeSettings: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
     isActive: {
       type: Boolean,
       default: true,

@@ -118,17 +118,22 @@ export const usersAPI = {
     const qs = new URLSearchParams(params).toString();
     return request(`/users${qs ? `?${qs}` : ''}`);
   },
+  getOne:   (id)       => request(`/users/${id}`),
+  update:   (id, data) => request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete:   (id)       => request(`/users/${id}`, { method: 'DELETE' }),
 
-  getOne: (id) => request(`/users/${id}`),
+  // Wishlist (server-side)
+  getWishlist:    ()          => request('/users/me/wishlist'),
+  toggleWishlist: (productId) => request(`/users/me/wishlist/${productId}`, { method: 'PUT' }),
 
-  update: (id, data) =>
-    request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  // Cart (server-side)
+  getCart:   ()      => request('/users/me/cart'),
+  syncCart:  (items) => request('/users/me/cart', { method: 'PUT', body: JSON.stringify({ items }) }),
+  clearCart: ()      => request('/users/me/cart', { method: 'DELETE' }),
 
-  delete: (id) =>
-    request(`/users/${id}`, { method: 'DELETE' }),
-
-  toggleWishlist: (productId) =>
-    request(`/users/wishlist/${productId}`, { method: 'PUT' }),
+  // Settings (admin, server-side)
+  getSettings:  ()       => request('/users/me/settings'),
+  saveSettings: (data)   => request('/users/me/settings', { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 // ─── Analytics (Admin) ────────────────────────────────────────────────────────

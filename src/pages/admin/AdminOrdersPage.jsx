@@ -1,245 +1,208 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../../context/AuthContext";
-import { getStoredOrders, saveStoredOrders, exportToCSV } from "../../utils/exportUtils";
+import { ordersAPI } from "../../services/api";
+import { exportToCSV } from "../../utils/exportUtils";
 
-const STATUS_MAP = {
-  Processing: "adm-badge-yellow",
-  Shipped:    "adm-badge-blue",
-  Completed:  "adm-badge-green",
-  Returns:    "adm-badge-red",
+const STATUS_OPTS = ["Pending","Processing","Shipped","Completed","Cancelled","Refunded"];
+const STATUS_BADGE = {
+  Pending:    "adm-badge adm-badge-amber",
+  Processing: "adm-badge adm-badge-amber",
+  Shipped:    "adm-badge adm-badge-blue",
+  Completed:  "adm-badge adm-badge-green",
+  Cancelled:  "adm-badge adm-badge-red",
+  Refunded:   "adm-badge adm-badge-red",
 };
 
 export default function AdminOrdersPage() {
-  const { user } = useAuth();
-  const [search, setSearch]   = useState("");
-  const [filter, setFilter]   = useState("All");
-  const [orders, setOrders]   = useState(() => getStoredOrders());
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const [orders,  setOrders]  = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search,  setSearch]  = useState("");
+  const [filter,  setFilter]  = useState("All");
+  const [selected, setSelected] = useState(null);
+  const [updating, setUpdating] = useState(null);
 
   useEffect(() => {
-    saveStoredOrders(orders);
-  }, [orders]);
+    ordersAPI.getAll({ limit: 100 })
+      .then(res => { if (res?.data) setOrders(res.data); })
+      .catch(err => console.warn("Orders fetch:", err.message))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const filtered = orders.filter((o) => {
-    const matchSearch =
-      o.customer.toLowerCase().includes(search.toLowerCase()) ||
-      o.id.toLowerCase().includes(search.toLowerCase()) ||
-      (o.email && o.email.toLowerCase().includes(search.toLowerCase()));
-    if (filter !== "All") return matchSearch && o.status === filter;
-    return matchSearch;
+  const filtered = orders.filter(o => {
+    const q = search.toLowerCase();
+    const match = !q || (o.orderId||"").toLowerCase().includes(q) ||
+      (o.customerName||"").toLowerCase().includes(q) ||
+      (o.customerEmail||"").toLowerCase().includes(q);
+    if (filter !== "All") return match && o.status === filter;
+    return match;
   });
 
   const metrics = [
-    { label: "Total orders",   value: String(orders.length) },
-    { label: "Processing",     value: String(orders.filter((o) => o.status === "Processing").length),  positive: false, change: "Awaiting fulfillment" },
-    { label: "Shipped",        value: String(orders.filter((o) => o.status === "Shipped").length),     positive: true,  change: "In transit" },
-    { label: "Completed",      value: String(orders.filter((o) => o.status === "Completed").length),   positive: true,  change: "Successfully delivered" },
-    { label: "Returns",        value: String(orders.filter((o) => o.status === "Returns").length),     positive: false, change: "Needs resolution" },
+    { label: "Total orders",  value: orders.length },
+    { label: "Processing",    value: orders.filter(o => o.status === "Processing" || o.status === "Pending").length,  positive: false },
+    { label: "Shipped",       value: orders.filter(o => o.status === "Shipped").length,   positive: true },
+    { label: "Completed",     value: orders.filter(o => o.status === "Completed").length,  positive: true },
+    { label: "Cancelled",     value: orders.filter(o => o.status === "Cancelled" || o.status === "Refunded").length, positive: false },
   ];
 
-  const handleStatusChange = (orderId, newStatus) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-    );
-    if (selectedOrder && selectedOrder.id === orderId) {
-      setSelectedOrder((prev) => ({ ...prev, status: newStatus }));
+  const handleStatusChange = async (orderId, newStatus) => {
+    setUpdating(orderId);
+    try {
+      await ordersAPI.updateStatus(orderId, newStatus);
+      setOrders(prev => prev.map(o => (o._id === orderId ? { ...o, status: newStatus } : o)));
+      if (selected?._id === orderId) setSelected(prev => ({ ...prev, status: newStatus }));
+    } catch (err) {
+      alert("Failed to update status: " + err.message);
+    } finally {
+      setUpdating(null);
     }
   };
 
-  const handleExportCSV = () => {
-    exportToCSV("orders_report", filtered, [
-      { key: "id", label: "Order ID" },
-      { key: "customer", label: "Customer Name" },
-      { key: "email", label: "Customer Email" },
-      { key: "date", label: "Order Date" },
-      { key: "items", label: "Items Count" },
-      { key: "total", label: "Total Amount ($)" },
-      { key: "status", label: "Status" },
-      { key: "address", label: "Shipping Address" },
-      { key: "payment", label: "Payment Method" },
-      { key: "trackingNumber", label: "Tracking Number" },
+  const handleExport = () => {
+    exportToCSV("orders_export", filtered, [
+      { key: "orderId",       label: "Order ID" },
+      { key: "customerName",  label: "Customer" },
+      { key: "customerEmail", label: "Email" },
+      { key: "status",        label: "Status" },
+      { key: "total",         label: "Total ($)" },
     ]);
+  };
+
+  const fmt = (dateStr) => {
+    try { return new Date(dateStr).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" }); }
+    catch { return "—"; }
   };
 
   return (
     <div className="adm-page">
-      <div className="adm-topbar">
-        <div>
-          <p className="adm-topbar-title">Orders Management</p>
-          <p className="adm-topbar-sub">{today} · Real-time fulfillment & tracking</p>
-        </div>
-        <div className="adm-topbar-right">
-          <div className="adm-avatar">{user?.name ? user.name.charAt(0) : "A"}</div>
-          <p style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{user?.name || "Admin"}</p>
-        </div>
-      </div>
 
+      {/* KPI cards */}
       <div className="adm-metrics">
-        {metrics.map((m) => (
+        {metrics.map(m => (
           <div key={m.label} className="adm-metric-card">
             <p className="adm-metric-label">{m.label}</p>
-            <p className="adm-metric-value">{m.value}</p>
-            {m.change && <p className={m.positive ? "adm-metric-change-pos" : "adm-metric-change-neg"}>{m.change}</p>}
+            <p className="adm-metric-value">{m.value.toLocaleString()}</p>
           </div>
         ))}
       </div>
 
+      {/* Controls */}
       <div className="adm-controls">
         <div className="adm-search">
-          <svg width="14" height="14" viewBox="0 0 18 18" fill="none" style={{ color: "#94a3b8", flexShrink: 0 }}>
-            <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M13 13L16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by order ID, customer name or email..."
-          />
+          <svg width="14" height="14" viewBox="0 0 18 18" fill="none"><circle cx="8" cy="8" r="5.5" stroke="#98a2b3" strokeWidth="1.5"/><path d="M13 13L16 16" stroke="#98a2b3" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by order ID, customer name or email…" />
         </div>
-        {["All", "Processing", "Shipped", "Completed", "Returns"].map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`adm-btn-secondary${filter === f ? " active" : ""}`}
-          >
-            {f}
-          </button>
+        {["All","Pending","Processing","Shipped","Completed","Cancelled"].map(f => (
+          <button key={f} onClick={() => setFilter(f)}
+            className={`adm-btn-secondary${filter === f ? " active" : ""}`}>{f}</button>
         ))}
-        <button onClick={handleExportCSV} className="adm-btn-primary" title="Export current orders as CSV spreadsheet">
-          Export CSV
-        </button>
+        <button onClick={handleExport} className="adm-btn-primary">Export CSV</button>
       </div>
 
+      {/* Table */}
       <div className="adm-table-wrap">
         <div className="adm-table-header">
-          {["Order ID", "Customer", "Date", "Items", "Total", "Status", "Actions"].map((h) => (
+          {["Order ID","Customer","Date","Items","Total","Status","Actions"].map(h => (
             <p key={h} className="adm-table-th">{h}</p>
           ))}
         </div>
 
-        {filtered.map((o) => (
-          <div key={o.id} className="adm-table-row">
-            <p className="adm-table-td" style={{ fontWeight: 700, color: "#2563eb" }}>{o.id}</p>
-            <div className="adm-table-td" style={{ minWidth: 0 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.customer}</p>
-              <p style={{ fontSize: 10, color: "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.email}</p>
+        {loading && (
+          <div className="adm-empty"><p>Loading orders…</p></div>
+        )}
+
+        {!loading && filtered.map(o => (
+          <div key={o._id} className="adm-table-row">
+            <p className="adm-table-td" style={{ fontWeight: 700, color: "#2563eb" }}>{o.orderId || o._id?.slice(-8)}</p>
+            <div className="adm-table-td" style={{ display:"flex", flexDirection:"column", gap:2, overflow:"hidden" }}>
+              <span style={{ fontSize:12, fontWeight:600, color:"#101828", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.customerName}</span>
+              <span style={{ fontSize:11, color:"#98a2b3", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.customerEmail}</span>
             </div>
-            <p className="adm-table-td" style={{ color: "#94a3b8", fontSize: 11 }}>{o.date}</p>
-            <p className="adm-table-td" style={{ color: "#64748b" }}>{o.items} item{o.items !== 1 ? "s" : ""}</p>
-            <p className="adm-table-td" style={{ fontWeight: 700 }}>${o.total.toLocaleString()}</p>
+            <p className="adm-table-td" style={{ color:"#98a2b3", fontSize:11 }}>{fmt(o.createdAt)}</p>
+            <p className="adm-table-td" style={{ color:"#667085" }}>{o.items?.length ?? 0} item{o.items?.length !== 1 ? "s" : ""}</p>
+            <p className="adm-table-td" style={{ fontWeight:700 }}>${(o.total||0).toLocaleString()}</p>
             <div className="adm-table-td">
-              <span className={`adm-badge ${STATUS_MAP[o.status] || "adm-badge-gray"}`}>{o.status}</span>
+              <span className={STATUS_BADGE[o.status] || "adm-badge adm-badge-gray"}>{o.status}</span>
             </div>
-            <div className="adm-table-td" style={{ display: "flex", gap: 6 }}>
-              <button onClick={() => setSelectedOrder(o)} className="adm-action-view">View</button>
+            <div className="adm-table-td" style={{ display:"flex", gap:6 }}>
+              <button onClick={() => setSelected(o)} className="adm-action-view">View</button>
               <select
                 value={o.status}
-                onChange={(e) => handleStatusChange(o.id, e.target.value)}
-                style={{
-                  fontSize: 11, fontWeight: 600, color: "#475569",
-                  background: "#F1F5F9", border: "none", borderRadius: 8,
-                  padding: "4px 6px", cursor: "pointer", outline: "none",
-                }}
+                disabled={updating === o._id}
+                onChange={e => handleStatusChange(o._id, e.target.value)}
+                style={{ height:30, padding:"0 6px", border:"1px solid #dde4ee", borderRadius:8, fontSize:11, fontFamily:"inherit", color:"#101828", background:"#fff", cursor:"pointer", outline:"none" }}
               >
-                {["Processing", "Shipped", "Completed", "Returns"].map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
+                {STATUS_OPTS.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
         ))}
 
-        {filtered.length === 0 && (
-          <div className="adm-empty"><p>No orders match the current filter</p></div>
+        {!loading && filtered.length === 0 && (
+          <div className="adm-empty"><p>No orders match the current filter.</p></div>
         )}
       </div>
 
-      {/* Order Details Modal */}
-      {selectedOrder && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.4)",
-          backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 1000, padding: 16
-        }}>
-          <div style={{
-            background: "#fff", borderRadius: 20, width: "100%", maxWidth: 540,
-            boxShadow: "0 20px 60px rgba(0,0,0,0.15)", border: "1px solid #E2E8F0",
-            overflow: "hidden", animation: "fadeIn 0.2s ease"
-          }}>
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "16px 20px", borderBottom: "1px solid #F1F5F9", background: "#F8FAFC"
-            }}>
+      {/* Order detail modal */}
+      {selected && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:24 }}>
+          <div style={{ background:"#fff", borderRadius:20, width:"100%", maxWidth:540, boxShadow:"0 20px 60px rgba(0,0,0,0.15)", overflow:"hidden" }}>
+
+            {/* Modal header */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px", borderBottom:"1px solid #f4f7fb", background:"#fafbfd" }}>
               <div>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "#2563eb", textTransform: "uppercase" }}>Order Invoice</p>
-                <h3 style={{ fontSize: 17, fontWeight: 800, color: "#0f172a", margin: 0 }}>{selectedOrder.id}</h3>
+                <p style={{ fontSize:10, fontWeight:700, color:"#2563eb", textTransform:"uppercase", margin:0 }}>Order Invoice</p>
+                <h3 style={{ fontSize:17, fontWeight:700, color:"#101828", margin:0 }}>{selected.orderId || selected._id}</h3>
               </div>
-              <button
-                onClick={() => setSelectedOrder(null)}
-                style={{
-                  background: "none", border: "none", fontSize: 18, color: "#94a3b8",
-                  cursor: "pointer", padding: "4px 8px", borderRadius: 8
-                }}
-              >
-                ✕
-              </button>
+              <button onClick={() => setSelected(null)} style={{ background:"none", border:"none", fontSize:18, color:"#98a2b3", cursor:"pointer" }}>✕</button>
             </div>
 
-            <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: 14 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div style={{ background: "#F8FAFC", padding: 12, borderRadius: 12, border: "1px solid #E8EDF5" }}>
-                  <p style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", margin: "0 0 4px" }}>Customer</p>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", margin: 0 }}>{selectedOrder.customer}</p>
-                  <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0" }}>{selectedOrder.email}</p>
+            <div style={{ padding:20, display:"flex", flexDirection:"column", gap:14 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                <div style={{ background:"#fafbfd", padding:"10px 14px", borderRadius:10, border:"1px solid #dde4ee" }}>
+                  <p style={{ fontSize:10, color:"#98a2b3", fontWeight:600, margin:"0 0 4px", textTransform:"uppercase" }}>Customer</p>
+                  <p style={{ fontSize:13, fontWeight:700, color:"#101828", margin:0 }}>{selected.customerName}</p>
+                  <p style={{ fontSize:11, color:"#667085", margin:"2px 0 0" }}>{selected.customerEmail}</p>
                 </div>
-                <div style={{ background: "#F8FAFC", padding: 12, borderRadius: 12, border: "1px solid #E8EDF5" }}>
-                  <p style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", margin: "0 0 4px" }}>Payment & Date</p>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", margin: 0 }}>{selectedOrder.payment || "Credit Card"}</p>
-                  <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0" }}>Placed on {selectedOrder.date}</p>
-                </div>
-              </div>
-
-              <div style={{ background: "#F8FAFC", padding: 12, borderRadius: 12, border: "1px solid #E8EDF5" }}>
-                <p style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", margin: "0 0 4px" }}>Shipping Destination</p>
-                <p style={{ fontSize: 12, color: "#0f172a", margin: 0 }}>{selectedOrder.address || "123 Technology Drive, Suite 400"}</p>
-                <p style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, margin: "4px 0 0" }}>Tracking: {selectedOrder.trackingNumber || "FX-7749210"}</p>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", background: "#EFF6FF", borderRadius: 12 }}>
-                <div>
-                  <span style={{ fontSize: 11, color: "#64748b" }}>Items: <strong>{selectedOrder.items}</strong></span>
-                  <span style={{ margin: "0 8px", color: "#CBD5E1" }}>•</span>
-                  <span style={{ fontSize: 11, color: "#64748b" }}>Status: <strong className={STATUS_MAP[selectedOrder.status]}>{selectedOrder.status}</strong></span>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <span style={{ fontSize: 11, color: "#64748b", display: "block" }}>Total Billed</span>
-                  <span style={{ fontSize: 18, fontWeight: 900, color: "#0f172a" }}>${selectedOrder.total.toLocaleString()}</span>
+                <div style={{ background:"#fafbfd", padding:"10px 14px", borderRadius:10, border:"1px solid #dde4ee" }}>
+                  <p style={{ fontSize:10, color:"#98a2b3", fontWeight:600, margin:"0 0 4px", textTransform:"uppercase" }}>Status</p>
+                  <span className={STATUS_BADGE[selected.status] || "adm-badge adm-badge-gray"}>{selected.status}</span>
+                  <p style={{ fontSize:11, color:"#667085", margin:"6px 0 0" }}>{fmt(selected.createdAt)}</p>
                 </div>
               </div>
-
-              <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-                <select
-                  value={selectedOrder.status}
-                  onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value)}
-                  style={{
-                    flex: 1, padding: "10px 12px", borderRadius: 10, border: "1px solid #CBD5E1",
-                    fontSize: 12, fontWeight: 600, color: "#0f172a", background: "#fff", cursor: "pointer"
-                  }}
-                >
-                  {["Processing", "Shipped", "Completed", "Returns"].map((s) => (
-                    <option key={s} value={s}>Status: {s}</option>
-                  ))}
+              <div style={{ background:"#fafbfd", padding:"10px 14px", borderRadius:10, border:"1px solid #dde4ee" }}>
+                <p style={{ fontSize:10, color:"#98a2b3", fontWeight:600, margin:"0 0 4px", textTransform:"uppercase" }}>Shipping address</p>
+                <p style={{ fontSize:12, color:"#101828", margin:0 }}>{selected.address}</p>
+              </div>
+              {/* Items */}
+              {selected.items?.map((item, i) => (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"8px 0", borderBottom:"1px solid #f4f7fb" }}>
+                  {item.productImage && <img src={item.productImage} alt="" style={{ width:40, height:40, borderRadius:8, objectFit:"cover", border:"1px solid #dde4ee", flexShrink:0 }} />}
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontSize:12, fontWeight:600, color:"#101828", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.productName}</p>
+                    <p style={{ fontSize:11, color:"#667085", margin:0 }}>Qty: {item.quantity}</p>
+                  </div>
+                  <p style={{ fontSize:13, fontWeight:700, color:"#101828", flexShrink:0 }}>${(item.price * item.quantity).toLocaleString()}</p>
+                </div>
+              ))}
+              {/* Totals */}
+              <div style={{ background:"#e8f0ff", borderRadius:10, padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+                  {selected.discount > 0 && <span style={{ fontSize:11, color:"#667085" }}>Discount: -${selected.discount?.toFixed(2)}</span>}
+                  <span style={{ fontSize:11, color:"#667085" }}>Tax: ${selected.tax?.toFixed(2)}</span>
+                  <span style={{ fontSize:11, color:"#667085" }}>Shipping: {selected.shipping === 0 ? "Free" : `$${selected.shipping}`}</span>
+                </div>
+                <div style={{ textAlign:"right" }}>
+                  <p style={{ fontSize:11, color:"#667085", margin:0 }}>Total</p>
+                  <p style={{ fontSize:20, fontWeight:700, color:"#101828", margin:0 }}>${selected.total?.toLocaleString()}</p>
+                </div>
+              </div>
+              {/* Status update */}
+              <div style={{ display:"flex", gap:10 }}>
+                <select value={selected.status} onChange={e => handleStatusChange(selected._id, e.target.value)}
+                  style={{ flex:1, height:44, padding:"0 12px", borderRadius:10, border:"1px solid #dde4ee", fontSize:13, fontFamily:"inherit", color:"#101828", background:"#fff", cursor:"pointer", outline:"none" }}>
+                  {STATUS_OPTS.map(s => <option key={s} value={s}>Status: {s}</option>)}
                 </select>
-                <button
-                  onClick={() => window.print()}
-                  style={{
-                    padding: "10px 18px", borderRadius: 10, background: "#0f172a", color: "#fff",
-                    border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer"
-                  }}
-                >
-                  Print Invoice
-                </button>
+                <button onClick={() => setSelected(null)} className="adm-btn-secondary">Close</button>
               </div>
             </div>
           </div>

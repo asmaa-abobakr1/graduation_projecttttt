@@ -42,6 +42,8 @@ export function AuthProvider({ children }) {
       const res = await authAPI.login(email, password);
       localStorage.setItem('volt_token', res.token);
       setUser(res.user);
+      // Tell Cart & ProductContext to reload from server
+      window.dispatchEvent(new CustomEvent('volt:login'));
       return { success: true, user: res.user };
     } catch (err) {
       return { success: false, error: err.message };
@@ -57,6 +59,7 @@ export function AuthProvider({ children }) {
       const res = await authAPI.register(name, email, password, role);
       localStorage.setItem('volt_token', res.token);
       setUser(res.user);
+      window.dispatchEvent(new CustomEvent('volt:login'));
       return { success: true, user: res.user };
     } catch (err) {
       return { success: false, error: err.message };
@@ -68,8 +71,15 @@ export function AuthProvider({ children }) {
   // ── Logout ──────────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
     setUser(null);
+    // Clear auth
     localStorage.removeItem('volt_user');
     localStorage.removeItem('volt_token');
+    // Clear per-user storefront data
+    localStorage.removeItem('volt_cart_items');
+    localStorage.removeItem('volt_wishlist');
+    localStorage.removeItem('volt_compare');
+    // Dispatch event so Cart & Product contexts reset their state instantly
+    window.dispatchEvent(new CustomEvent('volt:logout'));
   }, []);
 
   // ── Update profile ──────────────────────────────────────────────────────────

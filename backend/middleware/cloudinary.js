@@ -11,13 +11,24 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// ─── Allowed MIME types ───────────────────────────────────────────────────────
+const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+
+const imageFilter = (req, file, cb) => {
+  if (ALLOWED_MIMES.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only JPEG, PNG and WebP images are allowed.'), false);
+  }
+};
+
 // ─── Cloudinary storage for product images ────────────────────────────────────
-const storage = new CloudinaryStorage({
+const productStorage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: 'volt/products',
+    folder:        'volt/products',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    transformation: [{ width: 800, height: 600, crop: 'limit', quality: 'auto' }],
+    transformation: [{ width: 800, height: 600, crop: 'limit', quality: 'auto:good' }],
   },
 });
 
@@ -25,20 +36,23 @@ const storage = new CloudinaryStorage({
 const avatarStorage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: 'volt/avatars',
+    folder:        'volt/avatars',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    transformation: [{ width: 200, height: 200, crop: 'fill', gravity: 'face', quality: 'auto' }],
+    transformation: [{ width: 200, height: 200, crop: 'fill', gravity: 'face', quality: 'auto:good' }],
   },
 });
 
+// ─── Multer instances ─────────────────────────────────────────────────────────
 export const uploadProduct = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  storage:  productStorage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
 });
 
 export const uploadAvatar = multer({
-  storage: avatarStorage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  storage:  avatarStorage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB
 });
 
 export { cloudinary };
