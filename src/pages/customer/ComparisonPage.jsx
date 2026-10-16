@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useProducts } from '../../context/ProductContext';
 import { useCart } from '../../context/CartContext';
+import { useResponsive } from '../../hooks/useResponsive';
 
 const SPEC_KEYS = ['Display','Processor','Camera','Battery','RAM','Storage','OS','Weight'];
 
@@ -10,6 +11,7 @@ function StarRating({ rating = 5 }) {
 }
 
 export default function ComparisonPage() {
+  const { isMobile } = useResponsive();
   const { getCompareProducts, toggleCompare, clearCompare } = useProducts();
   const { addToCart } = useCart();
   const products = getCompareProducts();
@@ -32,7 +34,7 @@ export default function ComparisonPage() {
   ])];
 
   return (
-    <div style={{ background: '#fff', minHeight: '100vh', padding: '32px 64px' }}>
+    <div style={{ background: '#fff', minHeight: '100vh', padding: isMobile ? '16px' : '32px 64px' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
@@ -47,7 +49,12 @@ export default function ComparisonPage() {
       </div>
 
       {/* Table */}
-      <div style={{ overflowX: 'auto' }}>
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: isMobile ? 'touch' : undefined }}>
+        {isMobile && products.length > 2 && (
+          <p style={{ fontSize: 12, color: '#667085', marginBottom: 8, textAlign: 'center' }}>
+            Scroll horizontally to compare
+          </p>
+        )}
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
 
           {/* Product headers */}
@@ -60,7 +67,7 @@ export default function ComparisonPage() {
                 const pid = p._id || p.id;
                 const specs = p.specs instanceof Map ? Object.fromEntries(p.specs) : (p.specs || {});
                 return (
-                  <th key={pid} style={{ padding: '0 16px 20px', textAlign: 'left', verticalAlign: 'top' }}>
+                  <th key={pid} style={{ padding: '0 16px 20px', textAlign: 'left', verticalAlign: 'top', minWidth: 200 }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       {/* Image */}
                       <div style={{ width: '100%', height: 180, borderRadius: 16, overflow: 'hidden', background: '#f4f7fb' }}>

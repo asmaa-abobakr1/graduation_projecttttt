@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { ordersAPI } from '../../services/api';
+import { useResponsive } from '../../hooks/useResponsive';
 
 function SummaryLine({ label, value, bold, large, green, red }) {
   return (
@@ -14,6 +15,7 @@ function SummaryLine({ label, value, bold, large, green, red }) {
 }
 
 export default function CartPage() {
+  const { isMobile } = useResponsive();
   const {
     items, removeFromCart, updateQuantity, clearCart,
     subtotal, discount, tax, shipping, total, itemCount,
@@ -106,7 +108,7 @@ export default function CartPage() {
   }
 
   return (
-    <div style={{ background: '#f4f7fb', minHeight: '100vh', padding: '32px 64px' }}>
+    <div style={{ background: '#f4f7fb', minHeight: '100vh', padding: isMobile ? '20px 16px' : '32px 64px' }}>
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
@@ -116,13 +118,13 @@ export default function CartPage() {
         </p>
       </div>
 
-      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row' }}>
 
         {/* ── Left column ── */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20, width: isMobile ? '100%' : undefined }}>
 
           {/* Cart items panel */}
-          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #dde4ee', padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #dde4ee', padding: isMobile ? '16px 12px' : 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <p style={{ fontSize: 16, fontWeight: 700, color: '#101828', margin: 0 }}>Cart items</p>
               <span className="badge badge-gray">{itemCount}</span>
@@ -233,7 +235,7 @@ export default function CartPage() {
           {/* Delivery method */}
           <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #dde4ee', padding: 20 }}>
             <p style={{ fontSize: 16, fontWeight: 700, color: '#101828', margin: '0 0 16px' }}>Delivery method</p>
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 12, flexDirection: isMobile ? 'column' : 'row' }}>
               {[
                 { value: 'standard', label: 'Standard', sub: '5-7 business days', price: 'Free' },
                 { value: 'express',  label: 'Express',  sub: '1-2 business days', price: '$15.00' },
@@ -264,7 +266,7 @@ export default function CartPage() {
         </div>
 
         {/* ── Right: order summary ── */}
-        <div style={{ width: 380, flexShrink: 0, position: 'sticky', top: 100 }}>
+        <div style={{ width: isMobile ? '100%' : 380, flexShrink: 0, position: isMobile ? 'static' : 'sticky', top: 100 }}>
           <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #dde4ee', padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
             <p style={{ fontSize: 16, fontWeight: 700, color: '#101828', margin: 0 }}>Order summary</p>
 
@@ -301,7 +303,7 @@ export default function CartPage() {
               className="btn-primary"
               onClick={handlePlaceOrder}
               disabled={submitting || items.length === 0}
-              style={{ width: '100%', marginTop: 4, background: submitting ? '#93c5fd' : '#2563eb', borderColor: submitting ? '#93c5fd' : '#2563eb' }}
+              style={{ width: '100%', marginTop: 4, minHeight: 44, background: submitting ? '#93c5fd' : '#2563eb', borderColor: submitting ? '#93c5fd' : '#2563eb' }}
             >
               {submitting ? 'Placing order…' : 'Place order'}
             </button>
