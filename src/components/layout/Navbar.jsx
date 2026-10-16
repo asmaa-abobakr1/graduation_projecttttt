@@ -4,6 +4,7 @@ import { Search, ShoppingCart, Heart, Menu, X, ChevronDown, ArrowRight, GitCompa
 import { useCart } from '../../context/CartContext';
 import { useProducts } from '../../context/ProductContext';
 import { useAuth } from '../../context/AuthContext';
+import { useResponsive } from '../../hooks/useResponsive';
 
 export default function Navbar() {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -18,6 +19,7 @@ export default function Navbar() {
   const { user, logout, isAuthenticated }   = useAuth();
   const navigate  = useNavigate();
   const location  = useLocation();
+  const { isMobile } = useResponsive();
 
   /* close dropdowns on outside click */
   useEffect(() => {
@@ -71,7 +73,7 @@ export default function Navbar() {
 
       {/* ── Primary navigation ── */}
       <div style={{ background: '#fff', borderBottom: '1px solid #dde4ee' }}>
-        <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 64px', height: 72, display: 'flex', alignItems: 'center', gap: 28 }}>
+        <div style={{ maxWidth: 1440, margin: '0 auto', padding: isMobile ? '0 16px' : '0 64px', height: isMobile ? 60 : 72, display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 28 }}>
 
           {/* Brand */}
           <Link to="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
@@ -81,13 +83,13 @@ export default function Navbar() {
           </Link>
 
           {/* Search bar */}
-          <div ref={searchRef} style={{ flex: 1, position: 'relative' }}>
+          <div ref={searchRef} style={{ flex: 1, position: 'relative', minWidth: 0 }}>
             <form onSubmit={handleSearch}>
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 background: searchFocused ? '#fff' : '#f4f7fb',
                 border: `1px solid ${searchFocused ? '#2563eb' : '#f4f7fb'}`,
-                borderRadius: 10, padding: '0 14px', height: 42,
+                borderRadius: 10, padding: '0 14px', height: isMobile ? 38 : 42,
                 boxShadow: searchFocused ? '0 0 0 3px rgba(37,99,235,0.1)' : 'none',
                 transition: 'all 0.15s',
               }}>
@@ -144,7 +146,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Right nav items */}
+          {/* Right nav items — desktop only */}
           <nav style={{ display: 'flex', alignItems: 'center', gap: 24, flexShrink: 0 }} className="hide-mobile">
 
             {/* Compare */}
@@ -224,11 +226,26 @@ export default function Navbar() {
             )}
           </nav>
 
-          {/* Mobile hamburger */}
-          <button onClick={() => setMobileMenuOpen(v => !v)} className="show-mobile"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#101828', display: 'none' }}>
-            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
+          {/* Mobile: cart icon + hamburger */}
+          <div className="show-mobile" style={{ display: 'none', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <Link to="/cart" style={{
+              textDecoration: 'none', color: '#101828', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', minHeight: 44, minWidth: 44, position: 'relative',
+            }}>
+              <ShoppingCart size={20} />
+              {itemCount > 0 && (
+                <span style={{
+                  position: 'absolute', top: 4, right: 4, background: '#2563eb', color: '#fff',
+                  borderRadius: '50%', width: 16, height: 16, fontSize: 10, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>{itemCount}</span>
+              )}
+            </Link>
+            <button onClick={() => setMobileMenuOpen(v => !v)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#101828', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 }}>
+              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          </div>
         </div>
 
         {/* ── Category sub-nav ── */}
@@ -252,30 +269,50 @@ export default function Navbar() {
 
       {/* ── Mobile menu ── */}
       {mobileMenuOpen && (
-        <div style={{ background: '#fff', borderBottom: '1px solid #dde4ee', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            {categories.map(cat => (
-              <Link key={cat.name} to={cat.path} style={{
-                padding: '8px 12px', borderRadius: 8, textDecoration: 'none', fontSize: 12, fontWeight: 600,
-                textAlign: 'center', color: cat.active ? '#fff' : '#667085',
-                background: cat.active ? '#2563eb' : '#f4f7fb',
-              }}>
-                {cat.name}
-              </Link>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-            <Link to="/cart" style={{ flex: 1, padding: '9px', borderRadius: 9, textDecoration: 'none', fontSize: 12, fontWeight: 600, textAlign: 'center', background: '#f4f7fb', color: '#101828' }}>
-              Cart {itemCount > 0 ? `(${itemCount})` : ''}
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh',
+          zIndex: 9999, background: '#fff', overflowY: 'auto',
+          display: 'flex', flexDirection: 'column',
+        }}>
+          {/* Header row inside drawer */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', height: 60, borderBottom: '1px solid #dde4ee', flexShrink: 0 }}>
+            <Link to="/" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
+              <span style={{ fontSize: 22, fontWeight: 800, color: '#101828', letterSpacing: '-0.5px', fontFamily: 'Inter, sans-serif' }}>
+                VOLT<span style={{ color: '#2563eb' }}>•</span>
+              </span>
             </Link>
-            {!isAuthenticated ? (
-              <>
-                <Link to="/login"  style={{ flex: 1, padding: '9px', borderRadius: 9, textDecoration: 'none', fontSize: 12, fontWeight: 600, textAlign: 'center', background: '#f4f7fb', color: '#101828' }}>Sign In</Link>
-                <Link to="/signup" style={{ flex: 1, padding: '9px', borderRadius: 9, textDecoration: 'none', fontSize: 12, fontWeight: 700, textAlign: 'center', background: '#2563eb', color: '#fff' }}>Join Free</Link>
-              </>
-            ) : (
-              <button onClick={() => { logout(); navigate('/'); }} style={{ flex: 1, padding: '9px', borderRadius: 9, fontSize: 12, fontWeight: 600, background: '#feeceb', color: '#d92d20', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Sign Out</button>
-            )}
+            <button onClick={() => setMobileMenuOpen(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#101828', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 }}>
+              <X size={22} />
+            </button>
+          </div>
+
+          <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+              {categories.map(cat => (
+                <Link key={cat.name} to={cat.path} style={{
+                  padding: '8px 12px', borderRadius: 8, textDecoration: 'none', fontSize: 12, fontWeight: 600,
+                  textAlign: 'center', color: cat.active ? '#fff' : '#667085',
+                  background: cat.active ? '#2563eb' : '#f4f7fb',
+                  minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {cat.name}
+                </Link>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+              <Link to="/cart" style={{ flex: 1, padding: '9px', borderRadius: 9, textDecoration: 'none', fontSize: 12, fontWeight: 600, textAlign: 'center', background: '#f4f7fb', color: '#101828', minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                Cart {itemCount > 0 ? `(${itemCount})` : ''}
+              </Link>
+              {!isAuthenticated ? (
+                <>
+                  <Link to="/login"  style={{ flex: 1, padding: '9px', borderRadius: 9, textDecoration: 'none', fontSize: 12, fontWeight: 600, textAlign: 'center', background: '#f4f7fb', color: '#101828', minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Sign In</Link>
+                  <Link to="/signup" style={{ flex: 1, padding: '9px', borderRadius: 9, textDecoration: 'none', fontSize: 12, fontWeight: 700, textAlign: 'center', background: '#2563eb', color: '#fff', minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Join Free</Link>
+                </>
+              ) : (
+                <button onClick={() => { logout(); navigate('/'); }} style={{ flex: 1, padding: '9px', borderRadius: 9, fontSize: 12, fontWeight: 600, background: '#feeceb', color: '#d92d20', border: 'none', cursor: 'pointer', fontFamily: 'inherit', minHeight: 44 }}>Sign Out</button>
+              )}
+            </div>
           </div>
         </div>
       )}
