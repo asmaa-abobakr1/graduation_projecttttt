@@ -2,16 +2,16 @@ import { Link } from 'react-router-dom';
 import { useResponsive } from '../../hooks/useResponsive';
 
 export default function Footer() {
-  const { isMobile } = useResponsive();
+  const { isMobile, isTablet } = useResponsive();
   return (
     <footer style={{ background: '#0b1220', width: '100%' }}>
-      <div style={{ maxWidth: 1440, margin: '0 auto', padding: isMobile ? '32px 24px' : '48px 64px' }}>
+      <div style={{ maxWidth: 1440, margin: '0 auto', padding: isMobile ? '32px 20px' : '48px 64px' }}>
 
         {/* Columns */}
         <div style={{
           display: 'flex',
           flexDirection: isMobile ? 'column' : 'row',
-          gap: isMobile ? 32 : 80,
+          gap: isMobile ? '28px' : '60px',
           flexWrap: isMobile ? undefined : 'wrap',
           justifyContent: isMobile ? undefined : 'space-between',
         }}>
