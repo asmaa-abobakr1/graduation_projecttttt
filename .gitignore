@@ -25,3 +25,4 @@ dist-ssr
 
 # Secret files - do not commit
 mpc.json
+.env
